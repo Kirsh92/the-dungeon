@@ -29,3 +29,35 @@ This game began as a fork to expand the narrative possibilities of the original 
 * **Manuel (Manu)** - Lead Developer, Game Design & Lore Master
 * **Red Pangilinan** - Original Creator of the base code (*Dungeon Crawler RPG OD*)
 * *(Espacio reservado para futuros creadores de assets, música o SFX)*
+
+SPANISH VERSION
+
+The Dungeon (La Mazmorra)
+The Dungeon es un dungeon crawler infinito de código abierto basado en texto, con un oscuro giro LitRPG. Como la Muestra #4.472, debes sobrevivir a un laberinto brutal y aleatorio mientras un Sistema frío y burocrático, junto a espectadores interplanares, juzgan cada uno de tus movimientos. Reúne botín absurdo, descubre la oscura verdad que dejaron los sujetos anteriores e intenta romper el ciclo.
+
+Está basado en el código fuente de Dungeon Crawler on Demand de Redpangilinan, profundamente modificado para introducir un lore denso, eventos narrativos y mecánicas de supervivencia incrementales.
+
+El juego está disponible para Android y plataformas Web/Escritorio. Puedes encontrar las versiones oficiales del juego en:
+
+[Google Play Store - Versión Android] (Próximamente)
+
+[Versión Web - Jugar en el navegador] (Próximamente)
+
+Si te gusta este juego y quieres ver más características, pisos y actualizaciones de la historia, ¡considera apoyarme en GitHub Sponsors! Los reportes de problemas de todo tipo (reportes de bugs, peticiones de nuevas funciones, etc.) son bienvenidos.
+
+Contribuir
+¡Las contribuciones son muy bienvenidas! Ya sea que quieras añadir nuevos objetos extraños, ampliar los diálogos sarcásticos del Sistema o mejorar la interfaz. Siéntete libre de abrir issues y pull requests. Por favor, lee y sigue nuestro Código de Conducta.
+
+Comunidad
+[Subreddit Oficial] (Enlace pendiente)
+
+[Servidor de Discord] (Enlace pendiente)
+
+Créditos
+Este juego comenzó como un fork para expandir las posibilidades narrativas del motor original, evolucionando hacia una experiencia de fantasía oscura y LitRPG.
+
+Manuel (Manu) - Desarrollador Principal, Diseño de Juego y Maestro del Lore
+
+Red Pangilinan - Creador original del código base (Dungeon Crawler RPG OD)
+
+(Espacio reservado para futuros creadores de assets, música o SFX)
