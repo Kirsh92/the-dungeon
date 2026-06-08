@@ -30,7 +30,15 @@ This game began as a fork to expand the narrative possibilities of the original 
 * **Red Pangilinan** - Original Creator of the base code (*Dungeon Crawler RPG OD*)
 * *(Espacio reservado para futuros creadores de assets, música o SFX)*
 
+
+
+
+
+
+
+
 SPANISH VERSION
+
 
 # The Dungeon (La Mazmorra) 
 
