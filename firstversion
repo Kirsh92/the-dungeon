@@ -1,0 +1,2567 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Dungeon</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400;1,600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #07070c;
+  --bg2: #0d0b08;
+  --bg3: #0a0818;
+  --border: #3a2a1a;
+  --border2: #4a2a8a;
+  --text: #c9b99a;
+  --text-dim: #6a5a4a;
+  --gold: #c9943a;
+  --gold2: #ffd700;
+  --red: #8b2020;
+  --red2: #c06060;
+  --blue: #2a4090;
+  --purple: #9060c0;
+  --green: #508050;
+  --accent: #e0c870;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Crimson Text', serif;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(42,64,144,0.04) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 20%, rgba(144,96,192,0.03) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+#game {
+  width: 100%;
+  max-width: 480px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 0 60px rgba(0,0,0,0.8), inset 0 1px 0 rgba(201,148,58,0.1);
+}
+
+h1, h2, h3 { font-family: 'Cinzel', serif; }
+
+/* SCREENS */
+.sc {
+  display: none;
+  padding: 1.5rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 520px;
+  gap: 1rem;
+}
+.sc.on { display: flex; }
+
+/* BUTTONS */
+.btn {
+  background: transparent;
+  border: 1px solid #7a5c3a;
+  color: var(--text);
+  padding: 0.5rem 1.4rem;
+  cursor: pointer;
+  font-family: 'Cinzel', serif;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  border-radius: 3px;
+  transition: all 0.2s;
+}
+.btn:hover { background: #1a1008; border-color: var(--gold); color: #f0d090; }
+.btn.red { border-color: #7a3030; color: var(--red2); }
+.btn.red:hover { background: #1a0808; border-color: #c03030; }
+.btn.gold { border-color: #b8860b; color: var(--gold2); }
+.btn.gold:hover { background: #0a0800; border-color: var(--gold2); }
+
+/* INPUT */
+.inp {
+  background: #0f0f18;
+  border: 1px solid #4a3a2a;
+  color: var(--text);
+  padding: 0.5rem 0.8rem;
+  font-size: 1rem;
+  font-family: 'Crimson Text', serif;
+  border-radius: 3px;
+  width: 220px;
+  text-align: center;
+  outline: none;
+}
+.inp:focus { border-color: var(--gold); }
+
+/* PANEL */
+.panel {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0.75rem 0.9rem;
+  width: 100%;
+}
+
+/* BARS */
+.hb { background: #1a0808; border-radius: 2px; height: 10px; overflow: hidden; }
+.hf { background: var(--red); height: 100%; transition: width 0.3s; border-radius: 2px; }
+.eb { background: #0a0a1a; border-radius: 2px; height: 6px; overflow: hidden; }
+.ef { background: var(--blue); height: 100%; transition: width 0.3s; border-radius: 2px; }
+
+/* STAT ROW */
+.sr { display: flex; justify-content: space-between; font-size: 0.78rem; padding: 0.1rem 0; border-bottom: 1px solid #161210; }
+.sr:last-child { border-bottom: none; }
+.sv { color: var(--accent); }
+
+/* LOG */
+.log { font-size: 0.79rem; max-height: 160px; overflow-y: auto; line-height: 1.65; }
+.log p { padding: 0.1rem 0; border-bottom: 1px solid #131008; }
+.log::-webkit-scrollbar { width: 3px; }
+.log::-webkit-scrollbar-track { background: transparent; }
+.log::-webkit-scrollbar-thumb { background: #3a2a1a; }
+
+/* COMBAT */
+.cg { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; width: 100%; }
+.cp { background: var(--bg2); border: 1px solid var(--border); border-radius: 5px; padding: 0.65rem; }
+.cn { font-family: 'Cinzel', serif; font-size: 0.82rem; color: var(--accent); margin-bottom: 0.35rem; }
+.en { color: #c06060; }
+.al { font-size: 0.77rem; max-height: 130px; overflow-y: auto; }
+.al p { padding: 0.07rem 0; }
+.al .cr { color: var(--gold2); }
+.al .hi { color: var(--accent); }
+.al .eh { color: #c06060; }
+.al .inf { color: #7090b0; }
+.al .gd { color: #60a060; }
+.al .boss { color: var(--gold); font-style: italic; border-left: 2px solid var(--gold); padding-left: 0.4rem; margin: 0.15rem 0; }
+.al .mech { color: var(--purple); font-style: italic; border-left: 2px solid #6040a0; padding-left: 0.4rem; margin: 0.15rem 0; }
+.al .rage { color: #c03030; font-style: italic; border-left: 2px solid #902020; padding-left: 0.4rem; margin: 0.15rem 0; }
+
+/* INVENTORY */
+.ic { background: var(--bg2); border: 1px solid var(--border); border-radius: 3px; padding: 0.4rem 0.6rem; font-size: 0.77rem; cursor: pointer; transition: border-color 0.2s; margin-bottom: 0.25rem; }
+.ic:hover { border-color: var(--gold); }
+.ig { display: grid; grid-template-columns: 1fr 1fr; gap: 0.3rem; max-height: 180px; overflow-y: auto; }
+
+/* LEVEL UP */
+.lc { background: var(--bg2); border: 1px solid #5a3a10; border-radius: 5px; padding: 0.65rem; cursor: pointer; transition: all 0.2s; text-align: center; }
+.lc:hover { border-color: var(--gold); background: #1a1008; }
+.lg { display: grid; grid-template-columns: repeat(3,1fr); gap: 0.45rem; width: 100%; margin-top: 0.4rem; }
+
+/* OVERLAYS */
+.ov { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.82); display: none; align-items: center; justify-content: center; z-index: 10; }
+.ov.on { display: flex; }
+.ob { background: var(--bg2); border: 1px solid #7a5c3a; border-radius: 6px; padding: 1.3rem; max-width: 340px; width: 92%; text-align: center; }
+
+/* SYSTEM BOX */
+.sys-box {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 5px;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.78rem;
+  color: var(--purple);
+  font-style: italic;
+  margin: 0.25rem 0;
+  text-align: left;
+  line-height: 1.6;
+}
+.sys-box .voz {
+  font-size: 0.68rem;
+  color: #6040a0;
+  margin-bottom: 0.18rem;
+  font-style: normal;
+  letter-spacing: 0.04em;
+}
+
+/* CORPSE BOX */
+.corpse-box {
+  background: #070e07;
+  border: 1px solid #2a4a2a;
+  border-radius: 5px;
+  padding: 0.65rem 0.75rem;
+  font-size: 0.78rem;
+  color: #708070;
+  margin: 0.25rem 0;
+  text-align: left;
+  line-height: 1.8;
+}
+.corpse-box .lbl {
+  font-size: 0.67rem;
+  color: #405040;
+  margin-bottom: 0.28rem;
+  letter-spacing: 0.05em;
+  display: block;
+  font-style: normal;
+}
+.corpse-final {
+  background: #09070f;
+  border: 1px solid #4a2a6a;
+  border-radius: 5px;
+  padding: 0.65rem 0.75rem;
+  font-size: 0.78rem;
+  color: #9070b0;
+  margin: 0.25rem 0;
+  text-align: left;
+  line-height: 1.8;
+}
+
+/* CHOICES */
+.ec { display: flex; gap: 0.4rem; margin-top: 0.4rem; flex-wrap: wrap; }
+
+/* RARITY COLORS */
+.rc { color: #aaa; }
+.ru { color: #4caf50; }
+.rr { color: #2196f3; }
+.re { color: #9c27b0; text-shadow: 0 0 8px rgba(156,39,176,0.5); }
+.rl { color: #ff9800; animation: pulse-gold 2s ease-in-out infinite; }
+.rk { color: #f44336; animation: shift-relic 3s ease-in-out infinite; }
+
+@keyframes pulse-gold {
+  0%, 100% { color: #ff9800; text-shadow: 0 0 6px rgba(255,152,0,0.4); }
+  50%       { color: #ffd700; text-shadow: 0 0 14px rgba(255,215,0,0.8); }
+}
+@keyframes shift-relic {
+  0%, 100% { color: #f44336; text-shadow: 0 0 8px rgba(244,67,54,0.5); }
+  33%       { color: #ff6b35; text-shadow: 0 0 12px rgba(255,107,53,0.7); }
+  66%       { color: #c62828; text-shadow: 0 0 10px rgba(198,40,40,0.6); }
+}
+
+/* Rarity borders on inventory cards */
+.ic.rarity-epico   { border-color: #6a2a8a; box-shadow: inset 0 0 8px rgba(156,39,176,0.08); }
+.ic.rarity-legendario { border-color: #8a5a00; animation: border-gold 2s ease-in-out infinite; }
+.ic.rarity-reliquia   { border-color: #7a1a1a; animation: border-relic 3s ease-in-out infinite; }
+
+@keyframes border-gold {
+  0%, 100% { border-color: #8a5a00; box-shadow: inset 0 0 8px rgba(255,152,0,0.06); }
+  50%       { border-color: #c9943a; box-shadow: inset 0 0 12px rgba(255,215,0,0.14); }
+}
+@keyframes border-relic {
+  0%, 100% { border-color: #7a1a1a; box-shadow: inset 0 0 8px rgba(244,67,54,0.06); }
+  50%       { border-color: #c03030; box-shadow: inset 0 0 14px rgba(244,67,54,0.16); }
+}
+
+/* HUD EXTRAS */
+.mu { color: var(--text-dim); font-size: 0.77rem; }
+.gt { color: var(--gold2); }
+.ft { font-size: 0.68rem; color: #5a4a3a; letter-spacing: 0.07em; text-transform: uppercase; margin-left: 0.4rem; }
+.status-tag { font-size: 0.66rem; padding: 0.08rem 0.35rem; border-radius: 2px; margin-left: 0.25rem; border: 1px solid currentColor; vertical-align: middle; }
+
+/* DAYS COUNTER */
+.days-counter {
+  background: #07070f;
+  border: 1px solid #2a2a6a;
+  border-radius: 3px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.72rem;
+  color: #6080c0;
+  display: none;
+}
+.days-counter.on { display: inline-block; }
+
+/* DIVIDER */
+.div { width: 40px; height: 1px; background: #3a2a1a; }
+
+/* CLASS CARDS */
+.class-card{background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:0.7rem;cursor:pointer;transition:all 0.2s;text-align:center;}
+.class-card:hover{border-color:var(--gold);background:#1a1008;}
+.class-card.selected{border-color:var(--gold);background:#1a1008;box-shadow:0 0 10px rgba(201,148,58,0.2);}
+.class-name{font-family:'Cinzel',serif;font-size:0.82rem;color:var(--gold);margin-bottom:0.25rem;}
+.class-desc{font-size:0.7rem;color:#6a5a4a;line-height:1.5;margin-top:0.2rem;}
+/* ACTIVE SKILL BUTTONS */
+.skill-btn{background:#0d0b08;border:1px solid #3a2a4a;color:#9060c0;padding:0.35rem 0.4rem;cursor:pointer;font-family:'Cinzel',serif;font-size:0.65rem;border-radius:3px;transition:all 0.2s;text-align:center;width:100%;}
+.skill-btn.ready{border-color:#9060c0;color:#c080ff;background:#130820;animation:pulse-skill 1s ease-in-out infinite;}
+.skill-btn.used{border-color:#2a1a3a;color:#3a2a4a;cursor:not-allowed;}
+@keyframes pulse-skill{0%,100%{box-shadow:0 0 4px rgba(144,96,192,0.3);}50%{box-shadow:0 0 10px rgba(144,96,192,0.7);}}
+.skill-cd{font-size:0.6rem;color:#5a4a6a;display:block;margin-top:0.08rem;}
+
+
+/* INTRO TEXT */
+.intro-p {
+  font-size: 0.9rem;
+  line-height: 1.95;
+  color: #9a8a7a;
+  text-align: center;
+  max-width: 290px;
+}
+
+/* HAMBURGER MENU */
+.hbtn{position:absolute;top:0.7rem;right:0.7rem;background:transparent;border:1px solid #3a2a1a;color:#6a5a4a;width:2rem;height:2rem;cursor:pointer;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:0.9rem;transition:all 0.2s;z-index:5;}
+.hbtn:hover{border-color:var(--gold);color:var(--gold);}
+.menu-overlay{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.82);display:none;align-items:flex-start;justify-content:center;z-index:20;padding-top:2rem;}
+.menu-overlay.on{display:flex;}
+.menu-box{background:#0d0b08;border:1px solid #3a2a1a;border-radius:8px;width:88%;max-width:320px;max-height:88vh;overflow-y:auto;}
+.menu-header{display:flex;justify-content:space-between;align-items:center;padding:0.8rem 1rem;border-bottom:1px solid #2a1a10;}
+.menu-item{display:flex;align-items:center;gap:0.6rem;padding:0.65rem 1rem;border-bottom:1px solid #181410;cursor:pointer;transition:background 0.15s;font-size:0.85rem;color:var(--text);}
+.menu-item:hover{background:#1a1008;}
+.menu-item:last-child{border-bottom:none;}
+.menu-item.danger{color:#c06060;}
+.menu-item.danger:hover{background:#1a0808;}
+.menu-item .micon{font-size:1rem;width:1.2rem;text-align:center;}
+.menu-section{font-size:0.65rem;color:#4a3a2a;letter-spacing:0.08em;padding:0.5rem 1rem 0.2rem;text-transform:uppercase;}
+.lang-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.3rem;padding:0.5rem 1rem 0.7rem;}
+.lang-btn{background:#0a0808;border:1px solid #3a2a1a;color:#6a5a4a;padding:0.35rem;border-radius:3px;cursor:pointer;font-size:0.78rem;text-align:center;transition:all 0.2s;}
+.lang-btn:hover{border-color:var(--gold);color:var(--gold);}
+.lang-btn.active{border-color:var(--gold);color:var(--gold);background:#1a1008;}
+</style>
+</head>
+<body>
+<div id="game">
+
+<!-- INTRO -->
+<div id="s-intro" class="sc on">
+  <button class="hbtn" onclick="openMenu('intro')">☰</button>
+  <p style="font-size:0.68rem;letter-spacing:0.18em;color:#4a3a2a;">THE DUNGEON</p>
+  <h1 style="font-size:1.25rem;color:var(--gold);letter-spacing:0.06em;">La Mazmorra</h1>
+  <div class="div"></div>
+  <p class="intro-p">
+    Hay un momento entre morir<br>y dejar de existir.<br><br>
+    Tú lo cruzaste.<br><br>
+    No recuerdas cómo.<br>No recuerdas dónde.<br>No recuerdas quién eras.<br><br>
+    <span style="color:var(--text);">Solo recuerdas tu nombre.</span><br><br>
+    <span style="color:#5a4a3a;font-size:0.82rem;">Y que en algún lugar, hay alguien mirando.</span>
+  </p>
+  <button class="btn gold" onclick="goScreen('s-name')" style="margin-top:0.5rem;">Continuar</button>
+</div>
+
+<!-- MENU OVERLAY -->
+<div id="ov-menu" class="menu-overlay">
+  <div class="menu-box">
+    <div class="menu-header">
+      <h3 style="font-family:'Cinzel',serif;font-size:0.9rem;color:var(--gold);">Menú</h3>
+      <button onclick="closeMenu()" style="background:transparent;border:none;color:#6a5a4a;cursor:pointer;font-size:1rem;">✕</button>
+    </div>
+    <div id="menu-content"></div>
+  </div>
+</div>
+
+<!-- NAME -->
+<div id="s-name" class="sc">
+  <div class="sys-box" style="max-width:290px;">
+    <div class="voz">[ SISTEMA — registro automático ]</div>
+    Alma nueva detectada. Indica tu designación para el seguimiento del experimento.
+    <span style="font-size:0.7rem;color:#5a4070;display:block;margin-top:0.25rem;">— Ozrin: <em>"Otro. Apuesto veinte a que no pasa del ocho."</em></span>
+  </div>
+  <input id="ni" class="inp" type="text" maxlength="15" placeholder="Tu nombre..." />
+  <p id="ne" style="color:#c06060;font-size:0.77rem;min-height:1rem;"></p>
+  <button class="btn" onclick="doName()">Confirmar</button>
+</div>
+
+<!-- CLASS SELECTION -->
+<div id="s-class" class="sc">
+  <p style="font-size:0.68rem;letter-spacing:0.15em;color:#4a3a2a;">IDENTIFICACIÓN DE ALMA</p>
+  <h2 style="color:var(--gold);font-size:0.92rem;">¿Cómo reacciona tu alma?</h2>
+  <div class="sys-box" style="max-width:300px;">
+    <div class="voz">[ SISTEMA — clasificación de perfil ]</div>
+    Cada alma responde de forma distinta al entorno. Identifica tu instinto natural.
+  </div>
+  <div id="class-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;width:100%;max-width:320px;"></div>
+  <p id="class-error" style="color:#c06060;font-size:0.77rem;min-height:1rem;"></p>
+</div>
+
+<!-- ALLOC -->
+<div id="s-alloc" class="sc">
+  <h2 style="color:var(--gold);font-size:0.92rem;">Calibración de Atributos</h2>
+  <div class="sys-box" style="max-width:300px;">
+    <div class="voz">[ SISTEMA — calibración inicial ]</div>
+    Distribuye el potencial latente de tu alma. 20 puntos disponibles.
+    <span style="font-size:0.7rem;color:#5a4070;display:block;margin-top:0.25rem;">— Vael: <em>"Muestra estándar. Proceder con protocolo."</em></span>
+  </div>
+  <div class="panel" style="max-width:300px;">
+    <div id="ar"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.55rem;padding-top:0.55rem;border-top:1px solid #1a1008;">
+      <span style="font-size:0.8rem;">Puntos: <span id="ap" class="gt">20</span></span>
+      <button class="btn" onclick="resetAlloc()" style="padding:0.22rem 0.65rem;font-size:0.7rem;">Reiniciar</button>
+    </div>
+  </div>
+  <button class="btn gold" onclick="startGame()">Descender</button>
+</div>
+
+<!-- DUNGEON -->
+<div id="s-dun" class="sc" style="justify-content:flex-start;gap:0.5rem;">
+  <div style="display:flex;justify-content:space-between;align-items:center;width:100%;border-bottom:1px solid #201810;padding-bottom:0.4rem;">
+    <div>
+      <span id="hn" style="font-family:'Cinzel',serif;font-size:0.85rem;color:var(--gold);"></span>
+      <span id="hfl" class="mu" style="margin-left:0.5rem;"></span>
+      <span id="hth" class="ft"></span>
+    </div>
+    <div style="display:flex;gap:0.4rem;align-items:center;">
+      <span id="hdays" class="days-counter"></span>
+      <span class="gt" id="hg" style="font-size:0.8rem;"></span>
+      <button class="btn" onclick="openInv()" style="padding:0.22rem 0.55rem;font-size:0.7rem;">Inv</button>
+      <button onclick="openMenu('game')" style="background:transparent;border:1px solid #3a2a1a;color:#6a5a4a;padding:0.22rem 0.5rem;cursor:pointer;border-radius:4px;font-size:0.88rem;transition:all 0.2s;" onmouseover="this.style.borderColor='#c9943a'" onmouseout="this.style.borderColor='#3a2a1a'">☰</button>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;width:100%;">
+    <div class="panel">
+      <div style="margin-bottom:0.3rem;">
+        <div style="display:flex;justify-content:space-between;font-size:0.73rem;margin-bottom:2px;"><span>Vida</span><span id="hh" class="sv"></span></div>
+        <div class="hb"><div class="hf" id="hhb" style="width:100%;"></div></div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:0.73rem;margin-bottom:2px;"><span>EXP</span><span id="hx" class="sv"></span></div>
+        <div class="eb"><div class="ef" id="hxb" style="width:0%;"></div></div>
+      </div>
+    </div>
+    <div class="panel" style="font-size:0.73rem;">
+      <div class="sr"><span>ATQ</span><span id="ha" class="sv"></span></div>
+      <div class="sr"><span>DEF</span><span id="hd" class="sv"></span></div>
+      <div class="sr"><span>VEL</span><span id="hs" class="sv"></span></div>
+      <div class="sr"><span>T.Crit</span><span id="hcr" class="sv"></span></div>
+      <div class="sr"><span>D.Crit</span><span id="hcd" class="sv"></span></div>
+      <div style="margin-top:0.3rem;padding-top:0.3rem;border-top:1px solid #1a1410;">
+        <span onclick="toggleBonusPanel()" style="font-size:0.7rem;color:var(--gold);cursor:pointer;letter-spacing:0.03em;">Más ▾</span>
+      </div>
+    </div>
+  </div>
+  <!-- BONUS PANEL (hidden by default) -->
+  <div id="bonus-panel" style="display:none;width:100%;">
+    <div class="panel" style="font-size:0.72rem;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem;">
+        <span style="font-family:'Cinzel',serif;font-size:0.75rem;color:var(--gold);">Bonificaciones</span>
+        <span onclick="toggleBonusPanel()" style="font-size:0.7rem;color:#6a5a4a;cursor:pointer;">Cerrar ▴</span>
+      </div>
+      <div id="bonus-breakdown"></div>
+    </div>
+  </div>
+  <div class="panel" style="width:100%;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.35rem;">
+      <span id="etitle" style="font-family:'Cinzel',serif;font-size:0.8rem;color:var(--gold);">Descansando...</span>
+      <button id="ebtn" class="btn gold" onclick="toggleExp()" style="padding:0.22rem 0.65rem;font-size:0.73rem;">Explorar</button>
+    </div>
+    <div class="log" id="elog"><p style="color:#5a4a3a;font-style:italic;">Pulsa Explorar para descender.</p></div>
+    <div id="echoices" class="ec" style="display:none;"></div>
+  </div>
+</div>
+
+<!-- COMBAT -->
+<div id="s-cbt" class="sc" style="justify-content:flex-start;gap:0.5rem;">
+  <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
+    <h2 style="color:#c03030;font-size:0.85rem;letter-spacing:0.05em;">COMBATE</h2>
+    <span id="cbt-status" style="font-size:0.7rem;color:#8a6a4a;"></span>
+  </div>
+  <div class="cg">
+    <div class="cp">
+      <div class="cn" id="cpn"></div>
+      <div style="font-size:0.7rem;color:#806050;margin-bottom:2px;">Vida <span id="enemy-status-tag" class="status-tag" style="display:none;"></span></div>
+      <div class="hb" style="margin-bottom:3px;"><div class="hf" id="cph" style="width:100%;"></div></div>
+      <div style="font-size:0.7rem;" id="cphv"></div>
+    </div>
+    <div class="cp" style="border-color:#3a1a1a;">
+      <div class="cn en" id="cen"></div>
+      <div style="font-size:0.7rem;color:#806050;margin-bottom:2px;">Vida</div>
+      <div class="hb" style="margin-bottom:3px;"><div class="hf" id="ceh" style="width:100%;background:#7a2020;"></div></div>
+      <div style="font-size:0.7rem;" id="cehv"></div>
+    </div>
+  </div>
+  <!-- SPEED BARS -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;width:100%;">
+    <div style="font-size:0.68rem;color:#6a5a4a;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
+        <span>⚡ Turno</span><span id="spd-p-val" style="color:#c9943a;"></span>
+      </div>
+      <div style="background:#1a1808;border-radius:2px;height:6px;overflow:hidden;">
+        <div id="spd-p-bar" style="height:100%;width:0%;background:#c9943a;border-radius:2px;transition:width 0.18s linear;"></div>
+      </div>
+    </div>
+    <div style="font-size:0.68rem;color:#6a5a4a;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:2px;">
+        <span>⚡ Turno</span><span id="spd-e-val" style="color:#c06060;"></span>
+      </div>
+      <div style="background:#1a0808;border-radius:2px;height:6px;overflow:hidden;">
+        <div id="spd-e-bar" style="height:100%;width:0%;background:#c06060;border-radius:2px;transition:width 0.18s linear;"></div>
+      </div>
+    </div>
+  </div>
+  <!-- MINI STAT HUD -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;width:100%;">
+    <div class="panel" style="padding:0.4rem 0.6rem;">
+      <div style="font-size:0.67rem;color:#5a4a3a;margin-bottom:0.2rem;letter-spacing:0.04em;">TUS STATS</div>
+      <div class="sr" style="font-size:0.68rem;"><span>ATQ</span><span id="cbt-p-atk" class="sv"></span></div>
+      <div class="sr" style="font-size:0.68rem;"><span>DEF</span><span id="cbt-p-def" class="sv"></span></div>
+      <div class="sr" style="font-size:0.68rem;"><span>VEL</span><span id="cbt-p-spd" class="sv"></span></div>
+      <div class="sr" style="font-size:0.68rem;"><span>Vamp</span><span id="cbt-p-vamp" class="sv"></span></div>
+    </div>
+    <div class="panel" style="padding:0.4rem 0.6rem;border-color:#3a1a1a;">
+      <div style="font-size:0.67rem;color:#5a3a3a;margin-bottom:0.2rem;letter-spacing:0.04em;">ENEMIGO</div>
+      <div class="sr" style="font-size:0.68rem;"><span>ATQ</span><span id="cbt-e-atk" style="color:#d08080;"></span></div>
+      <div class="sr" style="font-size:0.68rem;"><span>DEF</span><span id="cbt-e-def" style="color:#d08080;"></span></div>
+      <div class="sr" style="font-size:0.68rem;"><span>VEL</span><span id="cbt-e-spd" style="color:#d08080;"></span></div>
+      <div class="sr" style="font-size:0.68rem;"><span>Tipo</span><span id="cbt-e-tipo" style="color:#d08080;"></span></div>
+    </div>
+  </div>
+  <div class="panel" style="width:100%;"><div class="al" id="clog"></div></div>
+  <!-- TURN MENU -->
+  <div id="turn-menu" style="display:none;width:100%;">
+    <div style="font-size:0.68rem;color:#5a4a3a;margin-bottom:0.35rem;letter-spacing:0.04em;">TU TURNO</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.4rem;">
+      <button class="btn gold" onclick="turnAtk()" style="padding:0.55rem;font-size:0.82rem;">⚔ Atacar</button>
+      <button class="btn" onclick="openSkillMenu()" id="skill-menu-btn" style="padding:0.55rem;font-size:0.82rem;">✦ Habilidades</button>
+      <button class="btn red" onclick="turnFlee()" style="padding:0.45rem;font-size:0.75rem;" id="flee-turn-btn">↩ Huir</button>
+      <button onclick="toggleCombatMode()" id="mode-btn" style="background:transparent;border:1px solid #3a3a2a;color:#6a6a4a;padding:0.45rem;cursor:pointer;font-family:'Cinzel',serif;font-size:0.72rem;border-radius:3px;transition:all 0.2s;"></button>
+    </div>
+  </div>
+  <!-- SKILL SUBMENU -->
+  <div id="skill-submenu" style="display:none;width:100%;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.35rem;">
+      <span style="font-size:0.68rem;color:#5a4a3a;letter-spacing:0.04em;">HABILIDADES</span>
+      <button onclick="closeSkillMenu()" style="background:transparent;border:none;color:#6a5a4a;cursor:pointer;font-size:0.75rem;">✕ Volver</button>
+    </div>
+    <div id="skill-btns" style="display:grid;grid-template-columns:1fr 1fr;gap:0.4rem;"></div>
+  </div>
+  <!-- AUTO MODE INDICATOR -->
+  <div id="auto-indicator" style="display:none;width:100%;text-align:center;">
+    <div style="font-size:0.7rem;color:#4a6a4a;padding:0.3rem;border:1px solid #2a4a2a;border-radius:3px;display:flex;justify-content:space-between;align-items:center;">
+      <span>⚙ Modo automático</span>
+      <button onclick="toggleCombatMode()" id="mode-btn-auto" style="background:transparent;border:1px solid #3a5a3a;color:#608060;padding:0.15rem 0.5rem;cursor:pointer;font-family:'Cinzel',serif;font-size:0.65rem;border-radius:3px;">Manual</button>
+    </div>
+  </div>
+  <div id="cbr" style="display:none;width:100%;">
+    <button class="btn gold" onclick="afterCombat()" style="width:100%;">Continuar</button>
+  </div>
+</div>
+
+<!-- OVERLAY: ZONA SEGURA -->
+<div id="ov-safezone" class="ov">
+  <div class="ob" style="max-width:360px;max-height:88vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.7rem;">
+      <h3 style="font-size:0.9rem;color:#708070;">⛺ ZONA SEGURA</h3>
+      <button class="btn" onclick="closeSafezone()" style="padding:0.15rem 0.45rem;font-size:0.7rem;">✕</button>
+    </div>
+    <p style="font-size:0.75rem;color:#5a6a5a;margin-bottom:0.8rem;font-style:italic;">Hay marcas en las paredes. Alguien estuvo aquí antes. Muchos.</p>
+    <div id="sz-options" style="display:grid;grid-template-columns:1fr 1fr;gap:0.4rem;margin-bottom:0.8rem;"></div>
+    <div id="sz-content"></div>
+  </div>
+</div>
+
+<!-- OVERLAY: LEADERBOARD -->
+<div id="ov-leaderboard" class="ov">
+  <div class="ob" style="max-width:360px;max-height:88vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem;">
+      <h3 style="font-size:0.88rem;color:#c06060;">EL REGISTRO</h3>
+      <button class="btn" onclick="closeLeaderboard()" style="padding:0.15rem 0.45rem;font-size:0.7rem;">✕</button>
+    </div>
+    <p style="font-size:0.7rem;color:#5a4a3a;margin-bottom:0.7rem;font-style:italic;">"Alguien lleva la cuenta. No sé si son ellos o somos nosotros."</p>
+    <div id="lb-content"></div>
+  </div>
+</div>
+<div id="ov-inv" class="ov">
+  <div class="ob" style="max-height:85vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.7rem;">
+      <h3 style="font-size:0.88rem;color:var(--gold);">Inventario</h3>
+      <button class="btn" onclick="closeInv()" style="padding:0.15rem 0.45rem;font-size:0.7rem;">✕</button>
+    </div>
+    <p style="font-size:0.76rem;color:#7a6a5a;margin-bottom:0.3rem;">Objetos (<span id="icount">0</span>/50)</p>
+    <div class="ig" id="ilist"></div>
+    <p style="font-size:0.76rem;color:#7a6a5a;margin-top:0.55rem;margin-bottom:0.3rem;">Equipado (<span id="ecount">0</span>/6)</p>
+    <div id="elist"></div>
+    <div style="margin-top:0.65rem;display:flex;gap:0.35rem;flex-wrap:wrap;">
+      <button class="btn red" onclick="sellCommon()" style="font-size:0.7rem;padding:0.22rem 0.65rem;">Vender Comunes</button>
+      <button class="btn red" onclick="unequipAll()" style="font-size:0.7rem;padding:0.22rem 0.65rem;">Desequipar Todo</button>
+    </div>
+  </div>
+</div>
+
+<!-- OVERLAY: LEVEL UP -->
+<div id="ov-lvl" class="ov">
+  <div class="ob">
+    <h3 style="color:var(--gold2);margin-bottom:0.18rem;">¡Subiste de Nivel!</h3>
+    <p id="lvlrem" style="font-size:0.77rem;color:#8a7a6a;margin-bottom:0.65rem;"></p>
+    <div class="lg" id="lvlchoices"></div>
+    <button class="btn" onclick="reroll()" id="rrbtn" style="margin-top:0.65rem;font-size:0.7rem;width:100%;"></button>
+  </div>
+</div>
+
+<!-- OVERLAY: DEATH -->
+<div id="ov-dead" class="ov">
+  <div class="ob">
+    <p style="font-size:1.6rem;margin-bottom:0.35rem;">💀</p>
+    <h3 style="color:var(--red2);margin-bottom:0.35rem;">Has Muerto</h3>
+    <p id="deathmsg" style="font-size:0.8rem;color:#7a6a5a;margin-bottom:0.45rem;"></p>
+    <div class="sys-box" id="deathsys" style="margin-bottom:0.75rem;text-align:left;"></div>
+    <button class="btn" onclick="respawn()" style="width:100%;">Volver a Empezar</button>
+  </div>
+</div>
+
+<!-- OVERLAY: ITEM -->
+<div id="ov-item" class="ov">
+  <div class="ob" id="itembox"></div>
+</div>
+
+<!-- OVERLAY: CORPSE -->
+<div id="ov-corpse" class="ov">
+  <div class="ob" style="max-width:340px;max-height:88vh;overflow-y:auto;">
+    <p style="font-size:1.2rem;margin-bottom:0.25rem;" id="corpse-icon">🕯</p>
+    <h3 id="corpse-title" style="color:#708070;font-size:0.82rem;margin-bottom:0.7rem;letter-spacing:0.04em;"></h3>
+    <div id="corpsetext"></div>
+    <div class="sys-box" id="corpsesys" style="margin-top:0.45rem;"></div>
+    <button class="btn" onclick="closeCorpse()" style="margin-top:0.65rem;width:100%;">Seguir adelante</button>
+  </div>
+</div>
+
+</div><!-- #game -->
+
+<script>
+var G = {
+  j:null, maz:null, en:null,
+  intC:null, intD:null,
+  dead:false, rrLeft:2, lvlP:0,
+  exploring:false, paused:true, inEvent:false,
+  combatSecs:0, mechDone:false,
+  deathCount:0, post100:false,
+  spdP:0, spdE:0, manualReady:false,
+  combatManual:false  // persists between combats
+};
+
+function nF(n){if(n>=1e6)return(n/1e6).toFixed(1)+'M';if(n>=1e3)return(n/1e3).toFixed(1)+'k';return Math.round(n).toString();}
+function rnd(a,b){return Math.floor(Math.random()*(b-a+1))+a;}
+function pct(a,b){return b===0?0:Math.max(0,Math.min(100,a/b*100));}
+function goScreen(id){document.querySelectorAll('.sc').forEach(function(s){s.classList.remove('on');});document.getElementById(id).classList.add('on');}
+
+// THEMES
+var THEMES=[
+  {min:1,max:5,name:'LA CAÍDA',
+   enemies:['Explorador Trasgo','Pícaro Trasgo','Lobo Sombra','Slime Viscoso','Araña de Cueva','Goblin Recluta'],
+   boss:[{name:'El Vigilante',intro:'Otro más.',death:'...curioso.'},{name:'Primer Guardián del Umbral',intro:'Todos llegan aquí con la misma cara de confusión.',death:'Al menos este llegó hasta aquí.'}],
+   nothing:['El suelo es de piedra tosca. Recién cortada.','Las antorchas están a intervalos exactos. Demasiado exactos.','Hay una marca en la pared. Un número. No entiendes qué significa.','Por un momento crees recordar algo. Luego, nada.','Oyes algo muy lejano. Como si alguien hablara al otro lado de la piedra.']},
+  {min:6,max:10,name:'EL BOSQUE ETERNO',
+   enemies:['Elfo Corrompido','Dríada Marchita','Bestia del Bosque','Arquero de Sombras','Espíritu de Árbol'],
+   boss:[{name:'Aranil, el Árbol que Recuerda',intro:'Este bosque lleva siglos aquí. Tú llevas muy poco.',death:'Crecerás. Si es que te dejan.'},{name:'Sylvara la Caída',intro:'¿A ti también te trajeron contra tu voluntad?',death:'Al menos yo elegí quedarme.'}],
+   nothing:['Los árboles crecen hacia abajo. Como si buscaran algo bajo la tierra.','Un pájaro te mira desde una rama. No parpadea.','La corteza tiene marcas. Como letras en un idioma que no conoces.','Huele a lluvia. Aquí abajo, sin cielo, huele a lluvia.','Algo se mueve entre los árboles. Cuando miras, no hay nada. Pero el sonido continúa.']},
+  {min:11,max:15,name:'EL REINO NO-MUERTO',
+   enemies:['Esqueleto Guerrero','Vampiro Joven','Zombie Noble','Espectro Errante','Caballero Muerto'],
+   boss:[{name:'Lord Valdric el Eterno',intro:'Llevas aquí más tiempo del que crees. Esta no es tu primera vez.',death:'Volverás. Siempre volvéis.'},{name:'La Reina Sin Nombre',intro:'Yo también olvidé mi nombre. Con el tiempo, dejará de importarte.',death:'El olvido es un regalo, no un castigo.'}],
+   nothing:['Los huesos en el suelo están demasiado ordenados para ser accidentales.','Un esqueleto en la esquina. Sentado. Con las manos en el regazo.','Las paredes sudan algo que no es agua.','Hay nombres grabados en el techo. Cientos. Ninguno que reconozcas.','Oyes un llanto muy lejano. Cuando te acercas, cesa.']},
+  {min:16,max:20,name:'EL ABISMO DE FUEGO',
+   enemies:['Demonio Menor','Cultista del Fuego','Salamandra de Lava','Guardián Volcánico'],
+   boss:[{name:'Ignareth el Invocado',intro:'Los que nos crearon se aburren fácilmente. Tú eres su juguete favorito esta temporada.',death:'Disfruta la atención mientras dure. La próxima temporada tendrán uno nuevo.'},{name:'Señor del Séptimo Infierno',intro:'Yo vine de otro lugar, como tú. Tardé mucho en entenderlo.',death:'Piso cien. Esa es la única respuesta que importa.'}],
+   nothing:['El calor aquí no quema. Solo recuerda que podría.','Una llama que no consume nada. Lleva ardiendo mucho tiempo.','Las paredes tienen inscripciones en una lengua de fuego. Una palabra se repite.','El suelo vibra levemente. Como si algo enorme respirara debajo.','Algo te observa desde las sombras. Cuando miras, las llamas crecen.']},
+  {min:21,max:25,name:'LAS PROFUNDIDADES',
+   enemies:['Anguilón Abisal','Kraken Joven','Sirena Depredadora','Cangrejo Abisal'],
+   boss:[{name:'La Madre de las Aguas',intro:'Mis crías nacen y mueren aquí. Generación tras generación. Como tú.',death:'El ciclo continúa. Siempre continúa.'},{name:'Thalassor el Sumergido',intro:'Oí que uno llegó al piso 97 una vez. Le borraron todo. Cuidado con lo que descubres.',death:'No pares. Aunque no sepas por qué.'}],
+   nothing:['El agua gotea desde el techo aunque no hay agua arriba.','Un sonido de olas. Lejano. Constante. Imposible.','El aire sabe a sal.','Algo nada en las sombras. No se acerca. Solo observa.','Hay marcas en el suelo que podrían ser un mapa. O una advertencia.']},
+  {min:26,max:30,name:'EL CIELO CAÍDO',
+   enemies:['Ángel Renegado','Paladín Corrompido','Serafín de la Ira','Guardián Celestial Caído'],
+   boss:[{name:'Azriel el Desterrado',intro:'Yo también fui espectador una vez. Ahora soy el espectáculo. Bienvenido al coliseo.',death:'Ya lo sabes, ¿verdad? Ya has empezado a deducirlo.'},{name:'El Arcángel sin Alas',intro:'Hay público detrás de estas paredes. Miles de ellos. Aplaudiendo cada uno de tus golpes.',death:'Entretenlos bien.'}],
+   nothing:['Hay plumas blancas en el suelo. Quemadas en las puntas.','Una estatua de ángel con la cara borrada. Alguien la borró con mucho cuidado.','Las cadenas en la pared son de oro. Pero siguen siendo cadenas.','Oyes canto. Hermoso y completamente vacío de emoción.','Hay luz que no viene de ningún sitio.']},
+  {min:31,max:35,name:'EL MECANISMO',
+   enemies:['Gólem de Piedra','Autómata Guardián','Centinela de Cobre','Engranaje Viviente'],
+   boss:[{name:'El Gran Mecanismo',intro:'[silencio — solo el sonido de engranajes y una pantalla con tu nombre escrito miles de veces]',death:'REINICIANDO CICLO #4472'},{name:'Forjador-7 Defectuoso',intro:'Fui diseñado para guardar esta zona. Tú fuiste diseñado para intentar cruzarla.',death:'FUNCIÓN COMPLETADA'}],
+   nothing:['Los engranajes giran aunque nada los mueve.','Algo hace clic cada cuatro segundos exactos. No encuentras la fuente.','Hay un espejo metálico en la pared. Tu reflejo tarda medio segundo en seguirte.','Una máquina abandonada. Todavía zumba.','El suelo tiene ranuras perfectamente espaciadas. Para qué, no lo sabes.']},
+  {min:36,max:40,name:'EL LABERINTO DE SUEÑOS',
+   enemies:['Sombra Errante','Miedo Encarnado','Pesadilla Viva','Ilusión Carnívora'],
+   boss:[{name:'Tu Peor Versión',intro:'Sé todo lo que olvidaste. ¿Quieres que te lo cuente?',death:'No importa. Lo olvidarás de todas formas.'},{name:'El Soñador Eterno',intro:'Este lugar se alimenta de lo que fuiste. Cuanto más lejos llegas, menos quedas.',death:'Sigue. Merece la pena lo que hay al final.'}],
+   nothing:['El corredor de antes ya no está. Pero tampoco recuerdas haber girado.','Ves tu sombra moverse antes de que tú lo hagas.','Alguien dice tu nombre. Cuando te giras, no hay nadie.','Por un momento no recuerdas por qué estás aquí. En ningún sitio.','Hay una puerta. La abres. Es el mismo corredor desde el que entraste.']},
+  {min:41,max:45,name:'LA JUNGLA PRIMORDIAL',
+   enemies:['Bestia Colosal','Chamán Tribal','Rex Primordial','Guerrero de la Tribu'],
+   boss:[{name:'El Gran Espíritu de la Caza',intro:'Mi tribu lleva generaciones cazando en esta jungla. Nunca hemos visto el sol.',death:'Quizá tú lo veas por nosotros.'},{name:'Madre Bestia',intro:'Mis crías nunca han conocido otro mundo. Este es el suyo. También es el tuyo, ya.',death:'El ciclo continúa.'}],
+   nothing:['La vegetación crece tan rápido que puedes verlo si te quedas quieto.','Un ojo te mira desde entre las hojas. Parpadea. Desaparece.','Los sonidos de la jungla paran todos a la vez. Tres segundos. Luego vuelven.','Hay una ofrenda en el suelo. Fresca. Alguien estuvo aquí hace muy poco.','Las plantas se apartan ligeramente cuando caminas.']},
+  {min:46,max:50,name:'LA CIUDAD OLVIDADA',
+   enemies:['Ciudadano Perdido','Guardia Olvidado','Niño que No Muere','Alcalde Sin Rostro'],
+   boss:[{name:'El Último Alcalde',intro:'Esta ciudad la construimos nosotros. Los primeros. Antes de que entendiéramos que no había salida.',death:'Piso cien. Esa es la respuesta. Siempre fue el piso cien.'},{name:'Quien Construyó la Ciudad',intro:'Llevamos aquí tanto tiempo que olvidamos que esto es una prisión. Nos inventamos una vida.',death:'No te quedes. Por favor, no te quedes.'}],
+   nothing:['Las casas tienen muebles. Ropa doblada. Comida en la mesa.','Hay niños dibujados en las paredes. Solo siluetas. Sin caras.','Una ventana encendida. Cuando te acercas, la luz se apaga.','Las calles están limpias. Demasiado limpias.','Oyes pasos detrás de ti. Te giras. Nadie. Pero los pasos continúan.']},
+];
+
+var NOTHING_POST100 = ['El suelo aquí es diferente. Como si nadie hubiera llegado hasta aquí antes.','Las antorchas cambian de color cuando pasas. Azul. Un segundo. Luego naranja otra vez.','El Sistema tarda más de lo normal en responder.','Oyes voces amortiguadas. Discutiendo sobre lo que hacer contigo.','Un día más. Eso es todo lo que tienes que hacer.'];
+
+function getTheme(floor){
+  for(var i=0;i<THEMES.length;i++){if(floor>=THEMES[i].min&&floor<=THEMES[i].max)return THEMES[i];}
+  var idx=((floor-51)%50);
+  return THEMES[Math.floor(idx/5)%THEMES.length];
+}
+
+// VOICES
+var VZ={
+  ozrin:['Ozrin','#c06090'],
+  vael:['Magister Vael','#7090c0'],
+  pub:['[ El Público ]','#a08040'],
+  sera:['???','#507050'],
+  consejo:['[ El Consejo ]','#506080']
+};
+
+// SYSTEM MESSAGES PER FLOOR
+var SYS_FLOOR={
+  5:[VZ.ozrin,'Cinco pisos. Me deben una moneda.'],
+  10:[VZ.vael,'Anomalía menor. El alma retiene fragmentos no previstos entre ciclos. Monitorizando.'],
+  15:[VZ.pub,'¡Piso quince! ¡Este lleva rato! ¡Aposté por ti!'],
+  20:[VZ.sera,'...'],
+  25:[VZ.vael,'Esta muestra está rompiendo la curva histórica. Reclasificando prioridad del experimento.'],
+  30:[VZ.ozrin,'Admito que me tiene intrigado. Lo cual es irritante.'],
+  35:[VZ.pub,'Piso treinta y cinco. Oye... ¿alguien más siente que esto ya no es solo un juego?'],
+  40:[VZ.consejo,'Actualización de clasificación pendiente para Sector V-7.'],
+  45:[VZ.sera,'Escucha. Sé que no puedes oírnos. Pero alguien tiene que dejar constancia de que esto está mal.'],
+  60:[VZ.ozrin,'¿Sabes lo que más me gusta de este? Que no sabe nada... Lo siento. No sé por qué dije eso.'],
+  70:[VZ.sera,'En el piso 67 hay una sala sellada. Si llegas, busca los archivos. Necesitas saber lo que pone en ellos.'],
+  75:[VZ.pub,'Llevo aquí desde el piso cinco. Vine a ver un espectáculo. Ya no sé muy bien qué estoy viendo.'],
+  80:[VZ.sera,'Me llamo Sera. Llevo doce años en este proyecto. Y llevo once arrepintiéndome. Hay un grupo de nosotros que quiere parar esto. Somos pocos. Tenemos miedo. Pero estamos aquí.'],
+  90:[VZ.consejo,'El sujeto V-7 se aproxima al umbral crítico. Si alcanza el piso cien, iniciar votación inmediata sobre el objetivo catalogado.'],
+  99:[VZ.ozrin,'...'],
+  110:[VZ.sera,'Diez días. Tu mundo lleva diez días más de los que tendría si te hubieras rendido.'],
+  120:[VZ.pub,'Llevo veinte días aquí sentado. Ya no recuerdo para qué vine.'],
+  150:[VZ.vael,'El Consejo está dividido. Nunca habíamos llegado a este punto en la historia del proyecto.'],
+  200:[VZ.ozrin,'Si llega al doscientos cincuenta me voy a tener que plantear si esto está bien. Y no quiero plantearme eso.'],
+  250:[VZ.sera,'Ciento cincuenta días. Ozrin acaba de decir en voz alta lo que llevamos años pensando en silencio. Algo está cambiando aquí arriba también.'],
+  300:[VZ.consejo,'Doscientos días de prórroga. El debate interno ha escalado a niveles sin precedentes. Esto es... irregular.']
+};
+
+// PISO 50 has two messages
+var SYS_50A=[VZ.vael,'La muestra ha superado al 97% de todos los sujetos. Iniciando protocolo de análisis racial completo.'];
+var SYS_50B=[VZ.consejo,'El sujeto V-7 ha alcanzado el umbral de relevancia racial. El objetivo catalogado entra en fase de evaluación preliminar.'];
+var SYS_100A=[VZ.consejo,'Iniciando votación. Acción sobre el objetivo catalogado: pendiente de resolución.'];
+var SYS_100B=[VZ.sera,'Ya lo sabes. Y ahora el Consejo también sabe que existes de verdad. Cada piso que superes es un día más de debate. Un día más para tu mundo. Lo sentimos. Es lo único que podemos hacer desde aquí.'];
+
+// ENTRY MESSAGES
+var SYS_ENTRY=[[VZ.vael,'Muestra registrada. Ciclo iniciado. Raza: pendiente de clasificación.'],[VZ.ozrin,'Otro. Apuesto veinte a que no pasa del ocho.'],[VZ.pub,'¡Nuevo participante! ¡Mirad qué confundido está!']];
+var SYS_FIRSTKILL=[[VZ.ozrin,'Oh. Mató algo. Anótalo, Vael.'],[VZ.vael,'Primera eliminación. Adaptación por encima de la media.'],[VZ.pub,'¡Sangre! ¡Esto es lo que pagamos por ver!']];
+
+// DEATH MESSAGES by count
+function getDeathMsg(count){
+  if(count===1) return {pre:'Despiertas. El suelo es frío. Tu nombre sigue ahí. No recuerdas haber muerto.',sys:[VZ.vael,'Reseteo completado. Memoria episódica borrada.']};
+  if(count===2) return {pre:'Despiertas. Otra vez. Hay algo raro en cómo conoces este suelo.',sys:[VZ.ozrin,'Segunda muerte. Va a ser de los que tardan.']};
+  if(count===3) return {pre:'Despiertas. Ya no te sorprende. Eso debería asustarte más de lo que lo hace.',sys:[VZ.vael,'La muestra se adapta al ciclo. Aumentar dificultad un 10%.']};
+  if(count===4) return {pre:'Despiertas. Sabes exactamente dónde estás. Algo en ti se niega a rendirse.',sys:null};
+  if(count===5) return {pre:'Despiertas. Ya ni siquiera necesitas orientarte.',sys:[VZ.ozrin,'Cinco muertes. Vael, ¿cuándo fue la última vez que vimos esto? — Vael: Ciclo #91. Hace mucho tiempo.']};
+  return {pre:'Despiertas. Este suelo, estas antorchas, este frío — son tuyos ya.',sys:[VZ.vael,'Décimo ciclo. Los datos de esta muestra son... extraordinarios. — Ozrin: No digas esa palabra en voz alta.']};
+}
+
+// CORPSES
+var CORPSES={
+  3:{icon:'🕯',title:'CADÁVER ENCONTRADO — Piso 3',
+     txt:'<div class="corpse-box"><span class="lbl">NOTA COSIDA EN LA MANGA</span>Desperté aquí hace... no sé cuánto. No recuerdo nada. Solo mi nombre.<br><br>El Sistema dice que soy la Muestra #4.469.<br><br>Le pregunté para qué me seguían.<br><br>No contestó.</div>',
+     sys:[VZ.vael,'#4.469. Causa de muerte: piso 3. Sin valor adicional.']},
+  8:{icon:'🕯',title:'CADÁVER ENCONTRADO — Piso 8',
+     txt:'<div class="corpse-box"><span class="lbl">GRABADO EN LA PARED CON ALGO AFILADO</span>Los monstruos salen siempre del mismo sitio. Las trampas están demasiado bien colocadas. El botín aparece justo cuando más lo necesitas.<br><br>Esto no es una mazmorra. Es un laboratorio.<br><br>Y nosotros somos las ratas.</div>',
+     sys:[VZ.ozrin,'#3.891. Demasiado listo para su propio bien. Por suerte, el razonamiento no salva vidas.']},
+  15:{icon:'🕯',title:'CADÁVER ENCONTRADO — Piso 15',
+      txt:'<div class="corpse-box"><span class="lbl">CARTA DOBLADA, GUARDADA EN UNA BOTA</span>Detrás de un tapiz en la sala del guardián: marcas de herramientas. Cantería limpia. Profesional.<br><br>ALGUIEN LA CONSTRUYÓ. Piedra a piedra.<br><br>Y las marcas son recientes. Alguien sigue añadiendo pisos.<br><br>¿Para qué necesitan más espacio?</div>',
+      sys:[VZ.vael,'#2.103. Reforzar camuflaje en sector 15. Causa de muerte: piso 23.']},
+  25:{icon:'🕯',title:'CADÁVER ENCONTRADO — Piso 25',
+      txt:'<div class="corpse-box"><span class="lbl">CENTENARES DE MARCAS EN LA PARED. DÍAS CONTADOS.</span>Es la cuarta vez que llego hasta aquí. Lo sé porque encontré mis propias notas. Mi letra. Mis palabras.<br><br>Ya no tengo miedo a morir. Tengo miedo a olvidar.<br><br>Si tú lees esto: eso que sientes cuando no te rindes — eso no es tuyo solo. Es de todos nosotros.</div>',
+      sys:[VZ.sera,'#1.204. Cuatro ciclos. El más resiliente que habíamos visto hasta ahora. Hasta que llegaste tú.']},
+  40:{icon:'🕯',title:'CADÁVER ENCONTRADO — Piso 40',
+      txt:'<div class="corpse-box"><span class="lbl">ESCRITO CON SANGRE. LA LETRA TIEMBLA.</span>Piso 40. Oí voces.<br><br>No del Sistema. Voces reales. Amortiguadas, como detrás de un cristal muy grueso.<br><br>Risas. Aplausos. Una multitud.<br><br>Somos gladiadores. Y ninguno de nosotros eligió entrar en la arena.</div>',
+      sys:[VZ.vael,'#788. El hechizo de silenciamiento falló 0.3 segundos. Corregido.']},
+  55:{icon:'🕯',title:'CADÁVER ENCONTRADO — Piso 55',
+      txt:'<div class="corpse-box"><span class="lbl">SOLO UNA CHAQUETA DOBLADA Y UNA NOTA</span>Descubrí algo parándome: hay momentos en que el Sistema duda. Medio segundo antes de que aparezca un monstruo, un silencio diferente.<br><br>No es automático.<br><br>Hay alguien tomando decisiones. Alguien que te está mirando ahora mismo.</div>',
+      sys:[VZ.ozrin,'#412. Sus datos fueron incómodos de procesar.']},
+  70:{icon:'🕯',title:'CADÁVER ENCONTRADO — Piso 70',
+      txt:'<div class="corpse-box"><span class="lbl">LA TINTA ESTÁ CORRIDA</span>Lo encontré en el piso 67: archivos. Listas. El nuestro aparece como Sector V-7. Junto a él: <em>pendiente de clasificación final.</em><br><br>Los otros mundos tienen anotaciones distintas. <em>Neutralizado. En proceso. Archivado.</em><br><br>Hay una puerta en el piso 97. No la que genera la mazmorra. Una puerta real, instalada. No sé qué hay al otro lado pero sé que no quieren que la encontremos.</div>',
+      sys:[VZ.sera,'#91 llegó más lejos que nadie en su momento. Por eso lo borraron tan rápido.']},
+  85:{icon:'🕯',title:'CADÁVER ENCONTRADO — Piso 85',
+      txt:'<div class="corpse-box"><span class="lbl">GRABADO EN EL SUELO. LETRA METICULOSA.</span>Doce. Soy la doce.<br><br>Estuve aquí cuando los magos hablaban entre ellos sin recordar que podíamos oírlos.<br><br>Hay un grupo entre ellos que no quiere que esto continúe. Son pocos. Tienen miedo.<br><br>Si alguien llega al piso cien: son la única salida.<br><br>No te rindas antes.</div>',
+      sys:[VZ.sera,'#12. La razón por la que algunos de nosotros empezamos a cuestionarlo todo.']},
+  100:{icon:'💀',title:'PISO 100',
+       txt:'<div class="corpse-final">La sala está vacía.<br><br>No hay guardián. No hay tesoro.<br><br>Solo un cuerpo en el centro.<br><br>Te acercas.<br><br>Llevas tu ropa. Tu equipamiento. Tus marcas de batalla.<br><br>Es tu cara.<br><br>...<br><br>Una nota en su mano. Tu letra:<br><br><em>"Ya es tarde para evitarlo. Los magos tienen suficiente.<br><br>Pero el Consejo no actúa sin unanimidad. Hay un sector que exige más datos.<br><br>Cada piso que superes es un día más de debate. Un día más para la Tierra.<br><br>No juegas para escapar. Ya no.<br><br>Juegas para ganar tiempo.<br><br>Nunca te rindas. Eso es lo único que siempre fuiste."</em></div>',
+       sys:[VZ.sera,'Ya lo sabe.']},
+  125:{icon:'🕯',title:'CADÁVER ENCONTRADO — Piso 125',
+       txt:'<div class="corpse-box"><span class="lbl">UNA NOTA SOLA. SIN CUERPO.</span>Llegué al cien. Entendí.<br><br>Seguí hasta el 124.<br><br>Veinticuatro días.<br><br>Espero que sirvieran para algo.<br><br>Sigue más lejos.</div>',
+       sys:[VZ.sera,'Veinticuatro días. Tú puedes llegar más lejos.']}
+};
+
+// CHEST/BLESSING SYSTEM MESSAGES
+var ZONE_EVENTS={
+  'EL REINO NO-MUERTO':{chest:null,bless:[VZ.vael,'Punto de restauración activo. El sujeto lo ha encontrado. Esperado.']},
+  'EL ABISMO DE FUEGO':{chest:[VZ.ozrin,'Encontró el cofre del sector. Hoy pierdo mucho dinero.'],bless:null},
+  'EL CIELO CAÍDO':{chest:null,bless:[VZ.sera,'Los magos instalaron esto para que los sujetos duren más. No es benevolencia. Es inversión.']},
+  'EL MECANISMO':{chest:null,bless:[VZ.vael,'Punto de mantenimiento activo. Eficiencia del experimento: óptima.']},
+  'LA CIUDAD OLVIDADA':{chest:null,bless:[VZ.sera,'La Ciudad la construyeron los primeros participantes. Nunca pudieron salir. Pero construyeron algo. Eso también es resistencia.']}
+};
+
+// ALLOC
+var DA={hp:5,atk:5,def:5,atkSpd:5},DP=20;
+var SD=[{k:'hp',l:'Vida',b:500,m:50,f:function(v){return ''+v;}},{k:'atk',l:'Ataque',b:100,m:10,f:function(v){return ''+v;}},{k:'def',l:'Defensa',b:50,m:10,f:function(v){return ''+v;}},{k:'atkSpd',l:'Vel. Ataque',b:0.4,m:0.02,f:function(v){return v.toFixed(2);}}];
+
+function renderAlloc(){
+  var c=document.getElementById('ar');c.innerHTML='';
+  SD.forEach(function(s){
+    var v=s.b+s.m*DA[s.k],row=document.createElement('div');
+    row.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:0.26rem 0;border-bottom:1px solid #161008;font-size:0.78rem;';
+    row.innerHTML='<span>'+s.l+': <span style="color:#e0c870;">'+s.f(v)+'</span></span><div style="display:flex;align-items:center;gap:5px;"><button class="btn" onclick="adj(\''+s.k+'\',-1)" style="padding:0.06rem 0.4rem;font-size:0.7rem;">-</button><span style="min-width:1rem;text-align:center;color:var(--gold);">'+DA[s.k]+'</span><button class="btn" onclick="adj(\''+s.k+'\',1)" style="padding:0.06rem 0.4rem;font-size:0.7rem;">+</button></div>';
+    c.appendChild(row);
+  });
+  document.getElementById('ap').textContent=DP;
+}
+function adj(k,d){if(d>0&&DP<=0)return;if(d<0&&DA[k]<=5)return;DA[k]+=d;DP-=d;renderAlloc();}
+function resetAlloc(){DA={hp:5,atk:5,def:5,atkSpd:5};DP=20;renderAlloc();}
+
+function doName(){
+  var v=document.getElementById('ni').value.trim(),e=document.getElementById('ne');
+  if(v.length<2||v.length>15){e.textContent='Entre 2 y 15 caracteres.';return;}
+  G.j={
+    n:v,lvl:1,kills:0,deaths:0,gold:0,firstKill:false,
+    base:{hp:500,atk:100,def:50,atkSpd:0.6,vamp:0,cR:0,cD:50},
+    bon:{hp:0,atk:0,def:0,atkSpd:0,vamp:0,cR:0,cD:0},
+    eq:{hp:0,atk:0,def:0,atkSpd:0,vamp:0,cR:0,cD:0},
+    st:{hp:0,hpM:0,atk:0,def:0,atkSpd:0,vamp:0,cR:0,cD:0},
+    exp:{c:0,m:100,cl:0,ml:100,pend:0},
+    inv:[],equip:[],skill:'',clase:null,
+    activeSkills:[],passiveSkills:[],
+    skillCDs:{},temp:{atk:0,atkSpd:0},days:0
+  };
+  renderClassGrid();goScreen('s-class');
+}
+
+// ── CLASSES ──────────────────────────────────────────────────
+var CLASSES={
+  'Resistente':{
+    icon:'🛡',
+    desc:'Sobrevive por puro instinto. No es el más fuerte, pero es el que más tarda en caer.',
+    sysMsg:[VZ.vael,'Muestra tipo Resistente. Alta tolerancia al daño. Útil para estudios prolongados.'],
+    bonusBase:{hp:10,def:8},
+    passiveSkill:'Piel de Hierro',
+    passiveDesc:'Recibes 15% menos daño permanentemente.',
+    actives:[
+      {id:'aguantar',name:'Aguantar',desc:'Absorbe hasta el 15% de tu vida máxima en daño.',cd:30,
+       fn:function(){
+         var shield=Math.round(G.j.st.hpM*0.15);G.j.shield=(G.j.shield||0)+shield;
+         cLog('Aguantas. Escudo de '+nF(shield)+' puntos activado.','mech');
+       }},
+      {id:'segundo_aliento',name:'Segundo Aliento',desc:'Recupera el 18% de tu vida máxima.',cd:45,
+       fn:function(){
+         var h=Math.round(G.j.st.hpM*0.18);G.j.st.hp=Math.min(G.j.st.hpM,G.j.st.hp+h);
+         cLog('Segundo aliento. +'+nF(h)+' vida recuperada.','gd');updCbt();
+       }}
+    ],
+    passiveUnlocks:[
+      {id:'fortaleza',name:'Fortaleza',desc:'+10% DEF permanente',lvl:5,fn:function(){G.j.bon.def+=10;calc();}},
+      {id:'ultimo_recurso',name:'Último Recurso',desc:'Por debajo del 25% vida, recibes 20% menos daño.',lvl:10,fn:function(){G.j.passiveSkills.push('ultimo_recurso');}}
+    ]
+  },
+  'Espectro':{
+    icon:'⚡',
+    desc:'Te mueves como si ya supieras dónde va a caer el golpe. Rápido, crítico, impredecible.',
+    sysMsg:[VZ.ozrin,'Espectro. Estos son los favoritos del público. Espectaculares mientras duran.'],
+    bonusBase:{atkSpd:0.12,cR:4},
+    passiveSkill:'Instinto',
+    passiveDesc:'+15% daño en el primer golpe de cada combate.',
+    actives:[
+      {id:'golpe_sombra',name:'Golpe Sombra',desc:'Ataque instantáneo x1.6 daño.',cd:22,
+       fn:function(){
+         var j=G.j,e=G.en;
+         var d=Math.round(j.st.atk*(j.st.atk/(j.st.atk+e.st.def))*1.6);
+         e.st.hp-=d;cLog('¡GOLPE SOMBRA! '+nF(d)+' daño.','cr');updCbt();if(!G.dead)checkEnd();
+       }},
+      {id:'paso_atras',name:'Paso Atrás',desc:'Reduce el próximo golpe enemigo un 60%.',cd:25,
+       fn:function(){G.j.nextDmgReduce=0.60;cLog('Te retiras. El próximo golpe enemigo hará 60% menos daño.','mech');}
+      }
+    ],
+    passiveUnlocks:[
+      {id:'filo_afilado',name:'Filo Afilado',desc:'+6% Daño Crítico',lvl:5,fn:function(){G.j.bon.cD+=6;calc();}},
+      {id:'acero_frio',name:'Acero Frío',desc:'Primeros 2 golpes del combate hacen +25% daño.',lvl:10,fn:function(){G.j.passiveSkills.push('acero_frio');}}
+    ]
+  },
+  'Drenador':{
+    icon:'🩸',
+    desc:'Algo en ti consume lo que toca. Cuanto más daño haces, más sobrevives.',
+    sysMsg:[VZ.vael,'Perfil Drenador. Anómalo. La forma en que absorbe energía no está del todo explicada.'],
+    bonusBase:{atk:10,vamp:1.5},
+    passiveSkill:'Sed',
+    passiveDesc:'Vampirismo cuenta desde el primer golpe sin espera.',
+    actives:[
+      {id:'drenar',name:'Drenar',desc:'Roba el 12% de la vida actual del enemigo.',cd:35,
+       fn:function(){
+         var j=G.j,e=G.en;
+         var steal=Math.round(e.st.hp*0.12);e.st.hp-=steal;j.st.hp=Math.min(j.st.hpM,j.st.hp+steal);
+         cLog('Drenas '+nF(steal)+' vida del enemigo.','gd');updCbt();if(!G.dead)checkEnd();
+       }},
+      {id:'furia',name:'Furia',desc:'+35% ATQ durante 5 segundos.',cd:32,
+       fn:function(){
+         var bonus=Math.round(G.j.st.atk*0.35);G.j.bon.atk+=bonus;calc();
+         cLog('Furia. +'+nF(bonus)+' ATQ durante 5 segundos.','rage');
+         setTimeout(function(){if(!G.dead){G.j.bon.atk-=bonus;calc();cLog('La furia se disipa.','inf');}},5000);
+       }}
+    ],
+    passiveUnlocks:[
+      {id:'hambre',name:'Hambre',desc:'+1.5% Vampirismo adicional.',lvl:5,fn:function(){G.j.base.vamp+=1.5;calc();}},
+      {id:'depredador',name:'Depredador',desc:'Al matar un enemigo recuperas 10% vida.',lvl:10,fn:function(){G.j.passiveSkills.push('depredador');}}
+    ]
+  },
+  'Espejo':{
+    icon:'🔮',
+    desc:'Devuelves lo que te dan. No inicias, respondes. Difícil de usar bien, devastador cuando funciona.',
+    sysMsg:[VZ.ozrin,'Espejo. Odio los Espejos. Nunca sabes cuánto van a durar ni cuánto daño van a hacer.'],
+    bonusBase:{def:8,atk:8},
+    passiveSkill:'Reflejo',
+    passiveDesc:'Reflejas el 12% del daño que recibes al enemigo.',
+    actives:[
+      {id:'contraataque',name:'Contraataque',desc:'El próximo golpe que recibas lo devuelves x1.8.',cd:30,
+       fn:function(){G.j.counterReady=true;cLog('Preparas el contraataque. El próximo golpe lo devolverás x1.8.','mech');}
+      },
+      {id:'provocar',name:'Provocar',desc:'El enemigo ataca ahora pero recibes 40% menos daño.',cd:25,
+       fn:function(){
+         var j=G.j,e=G.en;
+         var d=e.st.atk*(e.st.atk/(e.st.atk+j.st.def));
+         d*=0.60;d=Math.round(d);j.st.hp=Math.max(1,j.st.hp-d);
+         cLog('Provocas al enemigo. Te golpea por '+nF(d)+' (reducido).','eh');updCbt();
+       }}
+    ],
+    passiveUnlocks:[
+      {id:'espinas_extra',name:'Espinas',desc:'+5% daño reflejado adicional.',lvl:5,fn:function(){G.j.bon.reflect=(G.j.bon.reflect||0)+5;}},
+      {id:'represalia',name:'Represalia',desc:'Tras recibir un crítico, próximo ataque +40% daño.',lvl:10,fn:function(){G.j.passiveSkills.push('represalia');}}
+    ]
+  }
+};
+
+var G_selectedClass=null;
+
+function renderClassGrid(){
+  var grid=document.getElementById('class-grid');grid.innerHTML='';
+  Object.keys(CLASSES).forEach(function(key){
+    var cls=CLASSES[key];
+    var bonStr=Object.keys(cls.bonusBase).map(function(k){
+      var labels={hp:'Vida',atk:'ATQ',def:'DEF',atkSpd:'VEL',vamp:'Vamp',cR:'T.Crit',cD:'D.Crit'};
+      var v=cls.bonusBase[k];
+      return '+'+v+(k==='vamp'||k==='cR'||k==='cD'?'%':k==='atkSpd'?'':'')+' '+(labels[k]||k);
+    }).join(', ');
+    var div=document.createElement('div');
+    div.className='class-card'+(G_selectedClass===key?' selected':'');
+    div.innerHTML='<div style="font-size:1.3rem;margin-bottom:0.3rem;">'+cls.icon+'</div>'
+      +'<div class="class-name">'+key+'</div>'
+      +'<div class="class-desc">'+cls.desc+'</div>'
+      +'<div style="font-size:0.68rem;color:#5a8a5a;margin-top:0.35rem;">'+bonStr+'</div>'
+      +'<div style="font-size:0.68rem;color:#6a4a8a;margin-top:0.15rem;">'+cls.passiveDesc+'</div>';
+    div.onclick=function(){selectClass(key);};
+    grid.appendChild(div);
+  });
+}
+
+function selectClass(key){
+  G_selectedClass=key;
+  renderClassGrid();
+  document.getElementById('class-error').textContent='';
+  // Show sys message
+  var cls=CLASSES[key];
+  setTimeout(function(){
+    var m=cls.sysMsg;
+    var box=document.getElementById('class-grid');
+    var p=document.createElement('p');
+    p.style.cssText='font-size:0.72rem;color:'+m[0][1]+';font-style:italic;margin-top:0.5rem;text-align:center;grid-column:1/-1;';
+    p.innerHTML='<span style="font-size:0.68rem;">['+m[0][0]+']</span> '+m[1];
+    // Remove previous sys msg if any
+    var old=box.querySelector('.sys-msg-class');
+    if(old)old.remove();
+    p.className='sys-msg-class';
+    box.appendChild(p);
+    // Add confirm button
+    var existing=document.getElementById('class-confirm');
+    if(!existing){
+      var btn=document.createElement('button');
+      btn.id='class-confirm';btn.className='btn gold';
+      btn.style.cssText='margin-top:0.5rem;grid-column:1/-1;width:100%;';
+      btn.textContent='Confirmar';
+      btn.onclick=function(){confirmClass();};
+      box.parentNode.insertBefore(btn,document.getElementById('class-error'));
+    }
+  },300);
+}
+
+function confirmClass(){
+  if(!G_selectedClass){document.getElementById('class-error').textContent='Elige una clase.';return;}
+  G.j.clase=G_selectedClass;
+  var cls=CLASSES[G_selectedClass];
+  // Apply class base bonuses
+  Object.keys(cls.bonusBase).forEach(function(k){
+    if(k==='atkSpd')G.j.base.atkSpd+=cls.bonusBase[k];
+    else if(k==='vamp')G.j.base.vamp+=cls.bonusBase[k];
+    else if(k==='cR')G.j.base.cR+=cls.bonusBase[k];
+    else if(k==='cD')G.j.base.cD+=cls.bonusBase[k];
+    else G.j.bon[k]+=cls.bonusBase[k];
+  });
+  // Set passive skill name
+  G.j.skill=cls.passiveSkill;
+  // Init active skills with full CD (ready from start)
+  G.j.activeSkills=cls.actives.map(function(a){return a.id;});
+  G.j.skillCDs={};
+  cls.actives.forEach(function(a){G.j.skillCDs[a.id]=0;});
+  renderAlloc();goScreen('s-alloc');
+}
+
+function startGame(){
+  var j=G.j;
+  j.base.hp=500+50*DA.hp;j.base.atk=100+10*DA.atk;
+  j.base.def=50+10*DA.def;j.base.atkSpd=0.4+0.02*DA.atkSpd;
+  // Re-apply class atkSpd bonus on top of alloc
+  var cls=CLASSES[j.clase];
+  if(cls&&cls.bonusBase.atkSpd)j.base.atkSpd+=cls.bonusBase.atkSpd;
+  calc();j.st.hp=j.st.hpM;
+  j.combatHitCount=0;j.shield=0;j.nextDmgReduce=0;j.counterReady=false;
+  G.maz={p:{floor:1,room:1,rlim:5},action:0,corpsesDone:{},usedNothing:{},usedBlessing:{},usedSafeZone:false};
+  G.exploring=false;G.paused=true;G.inEvent=false;G.lvlP=0;G.post100=false;
+  openDungeon();
+  setTimeout(function(){var m=SYS_ENTRY[rnd(0,SYS_ENTRY.length-1)];showSys(m[0],m[1]);},8000);
+}
+
+// ── SKILL COOLDOWN TICK ──────────────────────────────────────
+
+
+
+function calc(){
+  var j=G.j,b=j.base,bn=j.bon,eq=j.eq;
+  j.st.hpM=Math.round(b.hp*(1+bn.hp/100)+eq.hp);
+  j.st.atk=Math.round(b.atk*(1+bn.atk/100)+eq.atk);
+  j.st.def=Math.round(b.def*(1+bn.def/100)+eq.def);
+  j.st.atkSpd=Math.min(2.5,b.atkSpd*(1+bn.atkSpd/100)+eq.atkSpd);
+  j.st.vamp=b.vamp+bn.vamp+eq.vamp;
+  j.st.cR=b.cR+bn.cR+eq.cR;
+  j.st.cD=b.cD+bn.cD+eq.cD;
+  if(j.st.hp>j.st.hpM)j.st.hp=j.st.hpM;
+}
+function applyEq(){
+  var j=G.j;j.eq={hp:0,atk:0,def:0,atkSpd:0,vamp:0,cR:0,cD:0};
+  j.equip.forEach(function(it){if(!it)return;it.stats.forEach(function(s){if(j.eq[s.k]!==undefined)j.eq[s.k]+=s.v;});});
+}
+
+function updateHUD(){
+  var j=G.j;calc();
+  var th=getTheme(G.maz.p.floor);
+  document.getElementById('hn').textContent=j.n+' Nv.'+j.lvl;
+  document.getElementById('hfl').textContent='Piso '+G.maz.p.floor+' · Sala '+G.maz.p.room;
+  document.getElementById('hth').textContent=th.name;
+  document.getElementById('hg').textContent='⚙ '+nF(j.gold);
+  document.getElementById('hh').textContent=nF(j.st.hp)+'/'+nF(j.st.hpM);
+  document.getElementById('hhb').style.width=pct(j.st.hp,j.st.hpM)+'%';
+  document.getElementById('hx').textContent=nF(j.exp.cl)+'/'+nF(j.exp.ml);
+  document.getElementById('hxb').style.width=pct(j.exp.cl,j.exp.ml)+'%';
+  document.getElementById('ha').textContent=nF(j.st.atk);
+  document.getElementById('hd').textContent=nF(j.st.def);
+  document.getElementById('hs').textContent=j.st.atkSpd.toFixed(2);
+  document.getElementById('hcr').textContent=j.st.cR.toFixed(1)+'%';
+  document.getElementById('hcd').textContent=j.st.cD.toFixed(1)+'%';
+  var dc=document.getElementById('hdays');
+  if(G.post100){dc.classList.add('on');dc.textContent='⏳ '+j.days+' días';}
+  else{dc.classList.remove('on');}
+}
+
+function openDungeon(){
+  goScreen('s-dun');updateHUD();
+  setLog('Despiertas en la oscuridad. No recuerdas nada. Solo tu nombre.');
+  document.getElementById('ebtn').textContent='Explorar';
+  document.getElementById('etitle').textContent='Descansando...';
+}
+
+function setLog(m){document.getElementById('elog').innerHTML='<p>'+m+'</p>';}
+function addLog(m,col){
+  var b=document.getElementById('elog'),p=document.createElement('p');
+  if(col)p.style.color=col;p.innerHTML=m;b.appendChild(p);b.scrollTop=b.scrollHeight;
+}
+function showSys(voice,msg){
+  var name=voice[0],color=voice[1];
+  var b=document.getElementById('elog'),p=document.createElement('p');
+  p.innerHTML='<span style="color:'+color+';font-size:0.68rem;">['+name+']</span> <em style="color:'+color+'bb;font-size:0.78rem;">'+msg+'</em>';
+  b.appendChild(p);b.scrollTop=b.scrollHeight;
+}
+
+function toggleBonusPanel(){
+  var p=document.getElementById('bonus-panel');
+  var open=p.style.display==='block';
+  if(!open){renderBonusBreakdown();}
+  p.style.display=open?'none':'block';
+}
+
+function renderBonusBreakdown(){
+  var j=G.j,b=j.base,bn=j.bon,eq=j.eq;
+  var rows=[
+    {l:'VIDA',    base:b.hp,   bonPct:bn.hp,   bonFlat:eq.hp,   fmt:function(v){return nF(Math.round(v));}, isPct:true},
+    {l:'ATQ',     base:b.atk,  bonPct:bn.atk,  bonFlat:eq.atk,  fmt:function(v){return nF(Math.round(v));}, isPct:true},
+    {l:'DEF',     base:b.def,  bonPct:bn.def,  bonFlat:eq.def,  fmt:function(v){return nF(Math.round(v));}, isPct:true},
+    {l:'VEL',     base:b.atkSpd,bonPct:bn.atkSpd,bonFlat:eq.atkSpd,fmt:function(v){return v.toFixed(2);}, isPct:true},
+    {l:'VAMP',    base:b.vamp, bonPct:0, bonFlat:bn.vamp+eq.vamp, fmt:function(v){return v.toFixed(1)+'%';}, isPct:false},
+    {l:'T.CRÍTICO',base:b.cR,  bonPct:0, bonFlat:bn.cR+eq.cR,   fmt:function(v){return v.toFixed(1)+'%';}, isPct:false},
+    {l:'D.CRÍTICO',base:b.cD,  bonPct:0, bonFlat:bn.cD+eq.cD,   fmt:function(v){return v.toFixed(1)+'%';}, isPct:false},
+  ];
+
+  var html='';
+  rows.forEach(function(r){
+    var total=r.isPct?r.base*(1+r.bonPct/100)+r.bonFlat:r.base+r.bonFlat;
+    total=Math.min(r.l==='VEL'?2.5:Infinity,total);
+    var hasBonus=(r.bonPct!==0||r.bonFlat!==0);
+    html+='<div style="padding:0.25rem 0;border-bottom:1px solid #161008;">';
+    html+='<div style="display:flex;justify-content:space-between;">';
+    html+='<span style="color:#8a7a6a;">'+r.l+'</span>';
+    html+='<span style="color:#e0c870;font-weight:600;">'+r.fmt(total)+'</span>';
+    html+='</div>';
+    if(hasBonus){
+      html+='<div style="padding-left:0.6rem;margin-top:0.1rem;">';
+      html+='<div style="display:flex;justify-content:space-between;color:#5a4a3a;">';
+      html+='<span>Base</span><span>'+r.fmt(r.base)+'</span></div>';
+      if(r.bonPct!==0){
+        var pctVal=r.base*(r.bonPct/100);
+        html+='<div style="display:flex;justify-content:space-between;">';
+        html+='<span style="color:#4a7a4a;">Nivel +'+r.bonPct.toFixed(1)+'%</span>';
+        html+='<span style="color:#4a7a4a;">+'+r.fmt(pctVal)+'</span></div>';
+      }
+      if(r.bonFlat!==0){
+        html+='<div style="display:flex;justify-content:space-between;">';
+        html+='<span style="color:#3a5a8a;">Equipo</span>';
+        html+='<span style="color:#3a5a8a;">+'+r.fmt(r.bonFlat)+'</span></div>';
+      }
+      html+='</div>';
+    }
+    html+='</div>';
+  });
+
+  // Skill
+  html+='<div style="padding:0.3rem 0;margin-top:0.1rem;">';
+  html+='<div style="display:flex;justify-content:space-between;">';
+  html+='<span style="color:#8a7a6a;">HABILIDAD</span>';
+  html+='<span style="color:#9060c0;font-size:0.7rem;">'+j.skill+'</span>';
+  html+='</div></div>';
+
+  // Trap debuffs if any
+  var trapLines=[];
+  if(j.trapDef)trapLines.push('DEF -8% ('+j.trapDef+' combates)');
+  if(j.trapAtk)trapLines.push('ATQ -8% ('+j.trapAtk+' combates)');
+  if(j.trapSpd)trapLines.push('VEL -0.3 ('+j.trapSpd+' combates)');
+  if(j.trapCR) trapLines.push('T.Crit -5% ('+j.trapCR+' combates)');
+  if(j.trapCD) trapLines.push('D.Crit -15% ('+j.trapCD+' combates)');
+  if(j.trapVenom)trapLines.push('Veneno activo');
+  if(trapLines.length>0){
+    html+='<div style="padding:0.3rem 0;border-top:1px solid #2a0808;margin-top:0.2rem;">';
+    html+='<div style="font-size:0.68rem;color:#8a3030;margin-bottom:0.2rem;letter-spacing:0.04em;">EFECTOS ACTIVOS</div>';
+    trapLines.forEach(function(t){
+      html+='<div style="color:#c06060;font-size:0.7rem;">⚠ '+t+'</div>';
+    });
+    html+='</div>';
+  }
+
+  document.getElementById('bonus-breakdown').innerHTML=html;
+}
+
+function toggleExp(){
+  if(G.inEvent)return;
+  if(G.paused){
+    G.paused=false;G.exploring=true;
+    document.getElementById('ebtn').textContent='Pausar';
+    document.getElementById('etitle').textContent='Explorando...';
+    G.intD=setInterval(tick,1600);
+  } else {
+    G.paused=true;G.exploring=false;
+    document.getElementById('ebtn').textContent='Explorar';
+    document.getElementById('etitle').textContent='Descansando...';
+    clearInterval(G.intD);
+  }
+}
+function stopExp(){G.inEvent=true;G.exploring=false;document.getElementById('ebtn').textContent='Explorar';document.getElementById('etitle').textContent='Explorando...';clearInterval(G.intD);}
+function resumeExp(){G.inEvent=false;G.paused=false;G.exploring=true;document.getElementById('ebtn').textContent='Pausar';document.getElementById('etitle').textContent='Explorando...';hideChoices();setTimeout(function(){if(G.exploring&&!G.inEvent)G.intD=setInterval(tick,1600);},2500);}
+
+function tick(){
+  if(!G.exploring||G.inEvent)return;
+  G.maz.action++;
+  var ac=G.maz.action,fl=G.maz.p.floor;
+  var corpseFloors=[3,8,15,25,40,55,70,85,100,125];
+  if(corpseFloors.indexOf(fl)!==-1&&!G.maz.corpsesDone[fl]&&ac===2){
+    stopExp();G.maz.corpsesDone[fl]=true;showCorpse(fl);return;
+  }
+  var pool=['enemy','enemy','nothing','nothing','nothing','treasure'];
+  // safezone — once per floor
+  if(!G.maz.usedSafeZone&&getSZUnlock(fl))pool.push('safezone');
+  // blessing max once per room
+  var roomKey2=G.maz.p.floor+'_'+G.maz.p.room;
+  if(!G.maz.usedBlessing)G.maz.usedBlessing={};
+  if(!G.maz.usedBlessing[roomKey2])pool.push('blessing');
+  if(ac>2&&ac<6)pool.push('next');
+  if(ac>5)pool=['next'];
+  var ev=pool[Math.floor(Math.random()*pool.length)];
+  if(ev==='nothing'){
+    var roomKey=G.maz.p.floor+'_'+G.maz.p.room;
+    if(!G.maz.usedNothing)G.maz.usedNothing={};
+    if(!G.maz.usedNothing[roomKey])G.maz.usedNothing[roomKey]=[];
+    var th=getTheme(fl);
+    var allMsgs=G.post100?NOTHING_POST100:th.nothing;
+    var used=G.maz.usedNothing[roomKey];
+    var available=allMsgs.filter(function(m){return used.indexOf(m)===-1;});
+    if(available.length===0){return;}
+    var chosen=available[rnd(0,available.length-1)];
+    used.push(chosen);
+    addLog(chosen);return;
+  }
+  stopExp();
+  if(ev==='enemy')encounterEnemy('normal');
+  else if(ev==='enemy_guardian')encounterEnemy('guardian');
+  else if(ev==='treasure')evTreasure();
+  else if(ev==='blessing')evBlessing();
+  else if(ev==='safezone'){G.maz.usedSafeZone=true;G.j.szAltarUsed=false;evSafeZone();}
+  else if(ev==='next')evNext();
+}
+
+function showCorpse(fl){
+  var c=CORPSES[fl];if(!c)return;
+  document.getElementById('corpse-icon').textContent=c.icon;
+  document.getElementById('corpse-title').textContent=c.title;
+  document.getElementById('corpsetext').innerHTML=c.txt.replace(/\[NOMBRE\]/g,G.j.n);
+  var sv=c.sys[0],sm=c.sys[1];
+  document.getElementById('corpsesys').innerHTML='<div class="voz">['+sv[0]+']</div><em style="color:'+sv[1]+'bb;">'+sm+'</em>';
+  document.getElementById('ov-corpse').classList.add('on');
+  if(fl===100){
+    G.post100=true;
+    setTimeout(function(){
+      showSys(SYS_100A[0],SYS_100A[1]);
+      setTimeout(function(){showSys(SYS_100B[0],SYS_100B[1]);},1400);
+    },500);
+  }
+}
+function closeCorpse(){document.getElementById('ov-corpse').classList.remove('on');G.maz.action=0;resumeExp();}
+
+function evNext(){
+  var isBoss=G.maz.p.room>=G.maz.p.rlim;
+  if(isBoss)addLog('La puerta del guardián. Algo espera al otro lado.','#c9943a');
+  else addLog('Una puerta. La siguiente sala.');
+  showChoices([
+    {l:isBoss?'Enfrentar al Guardián':'Entrar',fn:function(){hideChoices();if(isBoss)encounterEnemy('guardian');else nextRoom();}},
+    {l:'Esperar aquí',fn:function(){G.maz.action=0;resumeExp();}}
+  ]);
+}
+
+function encounterEnemy(cond){
+  var th=getTheme(G.maz.p.floor);
+  var fl=G.maz.p.floor;
+  var maxL=fl*5,minL=Math.max(1,maxL-4);
+  var lvl=cond==='guardian'?maxL:rnd(minL,maxL);
+  var tipos=['Ofensivo','Defensivo','Veloz','Letal','Equilibrado'];
+  var tipo=tipos[rnd(0,tipos.length-1)];
+  var bossData=null,name='';
+  if(cond==='guardian'){bossData=th.boss[rnd(0,th.boss.length-1)];name=bossData.name;}
+  else{name=th.enemies[rnd(0,th.enemies.length-1)];}
+
+  // Player-relative scaling factor by floor
+  var scale;
+  if(fl<=5)       scale=0.50;
+  else if(fl<=10) scale=0.70;
+  else if(fl<=20) scale=0.85;
+  else if(fl<=50) scale=1.00+((fl-21)/29)*0.10; // 100% to 110%
+  else if(fl<=100)scale=1.10+((fl-51)/49)*0.30; // 110% to 140%
+  else            scale=1.40+((fl-101)/100)*0.20; // 140%+ post-100
+  if(cond==='guardian') scale*=1.5;
+
+  // Base stats from player's actual current stats
+  var j=G.j;
+  var baseHp  = j.st.hpM  * scale;
+  var baseAtk = j.st.atk  * scale;
+  var baseDef = j.st.def  * scale;
+
+  // Type modifiers — now with more pronounced speed differences
+  var hp,atk,def,spd;
+  if(tipo==='Ofensivo') {hp=baseHp*0.75;atk=baseAtk*1.30;def=baseDef*0.40;spd=1.0;}
+  else if(tipo==='Defensivo'){hp=baseHp*1.50;atk=baseAtk*0.65;def=baseDef*1.60;spd=2.2;}
+  else if(tipo==='Veloz')    {hp=baseHp*0.65;atk=baseAtk*0.90;def=baseDef*0.35;spd=0.4;}
+  else if(tipo==='Letal')    {hp=baseHp*0.85;atk=baseAtk*1.10;def=baseDef*0.50;spd=0.8;}
+  else                       {hp=baseHp;     atk=baseAtk*0.90;def=baseDef*0.90;spd=1.2;}
+
+  G.en={name:name,tipo:tipo,lvl:lvl,cond:cond,bossData:bossData,
+    st:{hp:Math.round(hp),hpM:Math.round(hp),atk:Math.round(atk),def:Math.round(def),spd:spd,cR:5,cD:50},
+    rew:{exp:Math.round(lvl*16+(cond==='guardian'?lvl*55:0)),gold:Math.round(lvl*9),drop:Math.random()<(cond==='guardian'?0.92:0.32)},
+    mechDone:false,venomActive:false};
+  // Show encounter choice
+  var encounterMsgs={
+    'Ofensivo': name+' te mira con hambre. Parece que lleva mucho tiempo esperando.',
+    'Defensivo': name+' se interpone en tu camino. Sólido como una pared.',
+    'Veloz':     name+' aparece de la nada. Demasiado rápido para tu gusto.',
+    'Letal':     name+' gotea algo oscuro. El aire cambia a su alrededor.',
+    'Equilibrado':name+' bloquea el corredor. Ni grande ni pequeño. Solo decidido.'
+  };
+  var msg=encounterMsgs[tipo]||name+' bloquea el paso.';
+  addLog(msg);
+  if(cond==='guardian'){
+    showChoices([
+      {l:'Enfrentar',fn:function(){hideChoices();initCombat();}},
+    ]);
+  } else {
+    showChoices([
+      {l:'Enfrentar',fn:function(){hideChoices();initCombat();}},
+      {l:'Huir',fn:function(){
+        hideChoices();
+        // 20% chance the enemy cuts off escape — combat starts anyway
+        if(Math.random()<0.2){
+          var trapped=['No hay por donde salir. '+name+' te corta el paso.','Intentas retroceder pero '+name+' ya está encima de ti.','Demasiado tarde. '+name+' no te va a dejar ir tan fácil.'];
+          addLog(trapped[rnd(0,trapped.length-1)],'eh');
+          setTimeout(function(){initCombat();},900);
+          return;
+        }
+        // 70% clean escape, 30% escape with damage
+        var success=Math.random()<0.7;
+        if(success){
+          var ok=['Te escabulles antes de que te vea.','Das media vuelta. No merece la pena.','Te retiras en silencio.'];
+          addLog(ok[rnd(0,ok.length-1)],'inf');
+        } else {
+          var dmg=Math.round(G.en.st.atk*0.6);
+          G.j.st.hp=Math.max(1,G.j.st.hp-dmg);
+          var fail=['Al girar, '+name+' te alcanza: '+nF(dmg)+' daño. Consigues escapar.','No eras tan rápido. '+nF(dmg)+' daño antes de salir corriendo.','Un golpe en la espalda: '+nF(dmg)+' daño. Pero sigues vivo.'];
+          addLog(fail[rnd(0,fail.length-1)],'eh');
+          updateHUD();
+        }
+        G.maz.action=0;resumeExp();
+      }}
+    ]);
+  }
+}
+
+function nextRoom(){
+  G.maz.p.room++;
+  if(G.maz.p.room>G.maz.p.rlim){
+    G.maz.p.room=1;G.maz.p.floor++;
+    var fl=G.maz.p.floor;
+    if(G.post100){G.j.days++;addLog('Piso '+fl+'. Un día más.','#6080c0');}
+    else{addLog('Piso '+fl+'. '+getTheme(fl).name+'.','#c9943a');}
+    var sm=SYS_FLOOR[fl];
+    if(fl===50){setTimeout(function(){showSys(SYS_50A[0],SYS_50A[1]);setTimeout(function(){showSys(SYS_50B[0],SYS_50B[1]);},1200);},700);}
+    else if(sm){setTimeout(function(){showSys(sm[0],sm[1]);},700);}
+  }
+  G.maz.action=0;G.maz.usedNothing={};G.maz.usedBlessing={};G.maz.usedSafeZone=false;updateHUD();resumeExp();
+}
+
+function evTreasure(){
+  var th=getTheme(G.maz.p.floor);
+  var ze=ZONE_EVENTS[th.name];
+  var chestMsgs={
+    'LA CAÍDA':'Una caja de madera. Cerrada con un candado roto.',
+    'EL BOSQUE ETERNO':'Un nudo de raíces que esconde algo. Como si el bosque lo hubiera guardado.',
+    'EL REINO NO-MUERTO':'Un baúl con el escudo de una casa noble que ya no existe.',
+    'EL ABISMO DE FUEGO':'Una caja de metal con marcas de fuego. Caliente al tacto.',
+    'LAS PROFUNDIDADES':'Una caja sellada con cera marina.',
+    'EL CIELO CAÍDO':'Un arcón con plumas doradas en la cerradura.',
+    'EL MECANISMO':'Un compartimento metálico que se abre solo al acercarte.',
+    'EL LABERINTO DE SUEÑOS':'Un cofre que aparece cuando dejas de buscarlo.',
+    'LA JUNGLA PRIMORDIAL':'Una ofrenda envuelta en hojas grandes. Alguien la dejó para quien llegara.',
+    'LA CIUDAD OLVIDADA':'Un escaparate con la puerta abierta. El equipo tiene etiquetas de precio.'
+  };
+  var msg=chestMsgs[th.name]||'Encuentras un cofre. Alguien lo dejó aquí.';
+  addLog(msg);
+  showChoices([
+    {l:'Abrir',fn:function(){
+      hideChoices();var it=genItemDrop('normal',G.maz.p.floor);G.j.inv.push(it);
+      addLog('Encuentras: <span class="'+RCLS[it.r]+'" style="font-style:italic;">'+it.name+'</span> <span class="'+RCLS[it.r]+'" style="font-size:0.72rem;">('+it.r+')</span>');
+      if(ze&&ze.chest)setTimeout(function(){showSys(ze.chest[0],ze.chest[1]);},600);
+      resumeExp();
+    }},
+    {l:'Ignorar',fn:function(){addLog('Lo dejas. Alguien más lo necesitará.');G.maz.action=0;resumeExp();}}
+  ]);
+}
+
+function evBlessing(){
+  var th=getTheme(G.maz.p.floor);
+  var ze=ZONE_EVENTS[th.name];
+  var roomKey=G.maz.p.floor+'_'+G.maz.p.room;
+  if(!G.maz.usedBlessing)G.maz.usedBlessing={};
+  G.maz.usedBlessing[roomKey]=true;
+
+  // 35% chance it's a trap
+  var isTrap=Math.random()<0.35;
+
+  // Subtle descriptions — both sound equally strange, difference is one small detail
+  var blessDescs={
+    'LA CAÍDA':{
+      ok:  'Un símbolo grabado en la piedra. Cálido al tacto.',
+      trap:'Un símbolo grabado en la piedra. Frío al tacto.'
+    },
+    'EL BOSQUE ETERNO':{
+      ok:  'Una flor que no debería existir aquí. Los pétalos apuntan hacia arriba.',
+      trap:'Una flor que no debería existir aquí. Los pétalos apuntan hacia abajo.'
+    },
+    'EL REINO NO-MUERTO':{
+      ok:  'Una vela que arde sin consumirse. La llama es azul.',
+      trap:'Una vela que arde sin consumirse. La llama es verde.'
+    },
+    'EL ABISMO DE FUEGO':{
+      ok:  'Un símbolo de fuego en la pared. Pulsa lentamente. Como respirando.',
+      trap:'Un símbolo de fuego en la pared. Pulsa rápido. Como latiendo.'
+    },
+    'LAS PROFUNDIDADES':{
+      ok:  'Un charco que refleja luz. Tu reflejo te mira.',
+      trap:'Un charco que refleja luz. Tu reflejo mira hacia otro lado.'
+    },
+    'EL CIELO CAÍDO':{
+      ok:  'Una columna de luz. El símbolo tiene siete lados.',
+      trap:'Una columna de luz. El símbolo tiene ocho lados.'
+    },
+    'EL MECANISMO':{
+      ok:  'Una placa metálica con un botón verde.',
+      trap:'Una placa metálica con un botón rojo.'
+    },
+    'EL LABERINTO DE SUEÑOS':{
+      ok:  'Una figura de luz. Extiende la mano con la palma hacia arriba.',
+      trap:'Una figura de luz. Extiende la mano con la palma hacia abajo.'
+    },
+    'LA JUNGLA PRIMORDIAL':{
+      ok:  'Un árbol pequeño que brilla desde dentro. Huele a tierra mojada.',
+      trap:'Un árbol pequeño que brilla desde dentro. Huele a algo que no puedes identificar.'
+    },
+    'LA CIUDAD OLVIDADA':{
+      ok:  'Una capilla pequeña. La vela lleva encendida mucho tiempo. Hay flores frescas.',
+      trap:'Una capilla pequeña. La vela lleva encendida mucho tiempo. No hay flores.'
+    }
+  };
+  var descs=blessDescs[th.name]||{ok:'Un símbolo. Cálido al tacto.',trap:'Un símbolo. Frío al tacto.'};
+  var displayMsg=isTrap?descs.trap:descs.ok;
+  addLog(displayMsg);
+
+  // Sistema comments — always ambiguous, never a spoiler
+  var sysComments=[
+    [VZ.vael,'Punto de interés detectado en sector '+G.maz.p.floor+'-'+G.maz.p.room+'. Naturaleza: indeterminada.'],
+    [VZ.ozrin,'Apuesto a que lo toca. Siempre lo tocan.'],
+    [VZ.vael,'La muestra se aproxima al estímulo. Registrando.'],
+    [VZ.ozrin,'Interesante. A ver qué hace.'],
+    [VZ.sera,'Ten cuidado.']
+  ];
+  setTimeout(function(){
+    var c=sysComments[rnd(0,sysComments.length-1)];
+    showSys(c[0],c[1]);
+  },800);
+
+  // Trap effects by zone
+  var TRAP_EFFECTS={
+    'LA CAÍDA':        function(){var d=Math.round(G.j.st.hpM*0.18);G.j.st.hp=Math.max(1,G.j.st.hp-d);addLog('Una piedra cae del techo. '+nF(d)+' daño.','#c06060');updateHUD();},
+    'EL BOSQUE ETERNO':function(){G.j.bon.def=Math.max(-20,G.j.bon.def-8);G.j.trapDef=(G.j.trapDef||0)+1;addLog('Las espinas te rozan. DEF -8% durante 3 combates.','#c06060');calc();updateHUD();},
+    'EL REINO NO-MUERTO':function(){G.j.bon.atk=Math.max(-20,G.j.bon.atk-8);G.j.trapAtk=(G.j.trapAtk||0)+1;addLog('Una maldición te envuelve. ATQ -8% durante 3 combates.','#c06060');calc();updateHUD();},
+    'EL ABISMO DE FUEGO':function(){var d=Math.round(G.j.st.hpM*0.22);G.j.st.hp=Math.max(1,G.j.st.hp-d);addLog('Una llamarada te alcanza. '+nF(d)+' daño.','#c06060');updateHUD();},
+    'LAS PROFUNDIDADES':function(){G.j.bon.atkSpd=Math.max(-1,G.j.bon.atkSpd-0.3);G.j.trapSpd=(G.j.trapSpd||0)+1;addLog('El agua te ralentiza. VEL -0.3 durante 3 combates.','#c06060');calc();updateHUD();},
+    'EL CIELO CAÍDO':  function(){var d=Math.round(G.j.st.hpM*0.15);G.j.st.hp=Math.max(1,G.j.st.hp-d);G.j.bon.cR=Math.max(-10,G.j.bon.cR-5);G.j.trapCR=(G.j.trapCR||0)+1;addLog('Luz cegadora. '+nF(d)+' daño y T.Crítico -5% durante 3 combates.','#c06060');calc();updateHUD();},
+    'EL MECANISMO':    function(){var d=Math.round(G.j.st.hpM*0.2);G.j.st.hp=Math.max(1,G.j.st.hp-d);addLog('Un mecanismo oculto se activa. '+nF(d)+' daño mecánico.','#c06060');updateHUD();},
+    'EL LABERINTO DE SUEÑOS':function(){G.j.bon.cD=Math.max(-30,G.j.bon.cD-15);G.j.trapCD=(G.j.trapCD||0)+1;addLog('La figura te roba algo. D.Crítico -15% durante 3 combates.','#c06060');calc();updateHUD();},
+    'LA JUNGLA PRIMORDIAL':function(){G.j.trapVenom=true;addLog('Las raíces te envenenan. Recibirás daño en el próximo combate.','#c06060');},
+    'LA CIUDAD OLVIDADA':function(){var lost=Math.round(G.j.gold*0.2)||10;G.j.gold=Math.max(0,G.j.gold-lost);addLog('Una mano invisible. Te roban '+nF(lost)+' oro.','#c06060');updateHUD();}
+  };
+
+  showChoices([
+    {l:'Tocar',fn:function(){
+      hideChoices();
+      if(isTrap){
+        var trapFn=TRAP_EFFECTS[th.name];
+        if(trapFn)trapFn();
+        else{var d=Math.round(G.j.st.hpM*0.15);G.j.st.hp=Math.max(1,G.j.st.hp-d);addLog('Era una trampa. '+nF(d)+' daño.','#c06060');updateHUD();}
+        if(ze&&ze.bless)setTimeout(function(){showSys(ze.bless[0],ze.bless[1]);},600);
+      } else {
+        var h=Math.round(G.j.st.hpM*0.25);
+        G.j.st.hp=Math.min(G.j.st.hpM,G.j.st.hp+h);
+        addLog('Sientes calor. +'+nF(h)+' vida recuperada.','#508050');
+        if(ze&&ze.bless)setTimeout(function(){showSys(ze.bless[0],ze.bless[1]);},600);
+        updateHUD();
+      }
+      resumeExp();
+    }},
+    {l:'Ignorar',fn:function(){addLog('Pasas de largo. No confías en nada de este lugar.');G.maz.action=0;resumeExp();}}
+  ]);
+}
+
+function showChoices(opts){
+  var b=document.getElementById('echoices');b.style.display='flex';b.innerHTML='';
+  opts.forEach(function(o){var btn=document.createElement('button');btn.className='btn';btn.textContent=o.l;btn.onclick=o.fn;b.appendChild(btn);});
+}
+function hideChoices(){var b=document.getElementById('echoices');b.style.display='none';b.innerHTML='';}
+
+function initCombat(){
+  G.dead=false;G.combatTurn=0;G.mechDone=false;
+  G.j.temp={atk:0,atkSpd:0};
+  G.j.combatHitCount=0;
+  G.j.shield=G.j.shield||0;
+  G.j.nextDmgReduce=0;
+  G.j.counterReady=false;
+  G.j.pendingRepresalia=false;
+  goScreen('s-cbt');
+  document.getElementById('cpn').textContent=G.j.n+' Nv.'+G.j.lvl;
+  document.getElementById('cen').textContent=G.en.name+' Nv.'+G.en.lvl;
+  document.getElementById('cbr').style.display='none';
+  var tag=document.getElementById('enemy-status-tag');tag.style.display='none';
+  // Reset skill CDs to turns
+  if(G.j.skillCDs){Object.keys(G.j.skillCDs).forEach(function(id){G.j.skillCDs[id]=0;});}
+  updCbt();
+  document.getElementById('clog').innerHTML='<p class="inf">'+G.en.name+' ['+G.en.tipo+'].</p>';
+  if(G.en.bossData){cLog(G.en.name+': "'+G.en.bossData.intro+'"','boss');}
+  // Jungle venom
+  if(G.j.trapVenom){G.j.trapVenom=false;cLog('Llevas el veneno de la jungla. Perderás vida cada turno.','rage');G.j.jungleVenom=true;}
+  // Veloz attacks first
+  if(G.en.tipo==='Veloz'){
+    cLog(G.en.name+' es demasiado rápido. Ataca primero.','eh');
+    setTimeout(function(){doEnemyTurn(true);},600);
+  } else {
+    startPlayerTurn();
+  }
+}
+
+function startPlayerTurn(){
+  if(G.dead)return;
+  G.combatTurn++;
+  // Jungle venom tick
+  if(G.j.jungleVenom){
+    var vd=Math.round(G.j.st.hpM*0.03);G.j.st.hp=Math.max(0,G.j.st.hp-vd);
+    cLog('Veneno: -'+nF(vd)+' vida.','eh');updCbt();
+    if(G.j.st.hp<=0){checkEnd();return;}
+  }
+  // Check mech at turn 4
+  if(G.combatTurn===4&&!G.mechDone){checkMech();}
+  updCbt();
+  showTurnMenu();
+}
+
+function showTurnMenu(){
+  // Update mode button text
+  var mb=document.getElementById('mode-btn');
+  if(mb)mb.textContent=G.combatManual?'⚙ Auto':'✋ Manual';
+  // Hide flee for guardians
+  var fb=document.getElementById('flee-turn-btn');
+  if(fb)fb.style.display=G.en.cond==='guardian'?'none':'block';
+  if(G.combatManual){
+    document.getElementById('turn-menu').style.display='block';
+    document.getElementById('auto-indicator').style.display='none';
+  } else {
+    document.getElementById('turn-menu').style.display='none';
+    document.getElementById('auto-indicator').style.display='block';
+    // Auto mode — execute after short delay
+    setTimeout(function(){if(!G.dead)autoTurn();},600);
+  }
+}
+
+function autoTurn(){
+  // Try to use a skill if available and health is low
+  var j=G.j;
+  var cls=j.clase?CLASSES[j.clase]:null;
+  var usedSkill=false;
+  if(cls&&j.st.hp<j.st.hpM*0.4){
+    // Try healing skill first
+    cls.actives.forEach(function(sk){
+      if(!usedSkill&&(sk.id==='segundo_aliento'||sk.id==='drenar')&&(j.skillCDs[sk.id]||0)<=0){
+        j.skillCDs[sk.id]=sk.cd;sk.fn();usedSkill=true;
+      }
+    });
+  }
+  if(!usedSkill)pAtk();
+  if(!G.dead)doEnemyTurn(false);
+}
+
+function turnAtk(){
+  hideMenus();
+  pAtk();
+  if(!G.dead)doEnemyTurn(false);
+}
+
+function openSkillMenu(){
+  document.getElementById('turn-menu').style.display='none';
+  document.getElementById('skill-submenu').style.display='block';
+  renderSkillBtns();
+}
+
+function closeSkillMenu(){
+  document.getElementById('skill-submenu').style.display='none';
+  document.getElementById('turn-menu').style.display='block';
+}
+
+function renderSkillBtns(){
+  var j=G.j;var cls=j.clase?CLASSES[j.clase]:null;
+  var container=document.getElementById('skill-btns');container.innerHTML='';
+  if(!cls){container.innerHTML='<p style="font-size:0.75rem;color:#5a4a3a;">Sin habilidades.</p>';return;}
+  cls.actives.forEach(function(skill){
+    var cd=j.skillCDs[skill.id]||0;
+    var ready=cd<=0;
+    var btn=document.createElement('button');
+    btn.className='skill-btn'+(ready?' ready':' used');
+    btn.disabled=!ready;
+    btn.innerHTML='<strong>'+skill.name+'</strong><span class="skill-cd">'+(ready?skill.desc:(cd+' turnos')+'</span>');
+    btn.onclick=function(){if(ready)execSkill(skill);};
+    container.appendChild(btn);
+  });
+}
+
+function execSkill(skill){
+  hideMenus();
+  G.j.skillCDs[skill.id]=skill.cd;
+  skill.fn();
+  updCbt();
+  if(!G.dead)checkEnd();
+  if(!G.dead)doEnemyTurn(false);
+}
+
+function turnFlee(){
+  hideMenus();
+  if(Math.random()<0.2){
+    var trapped=['No hay por donde salir.',''+G.en.name+' te corta el paso.','Demasiado tarde.'];
+    cLog(trapped[rnd(0,trapped.length-1)],'eh');
+    setTimeout(function(){doEnemyTurn(false);},500);
+    return;
+  }
+  var success=Math.random()<0.7;
+  if(success){
+    G.dead=true;clearInterval(G.intC);
+    cLog('Consigues escapar.','inf');
+    setTimeout(function(){goScreen('s-dun');updateHUD();G.maz.action=0;resumeExp();},1200);
+  } else {
+    var dmg=Math.round(G.en.st.atk*0.6);
+    G.j.st.hp=Math.max(1,G.j.st.hp-dmg);
+    cLog(G.en.name+' te golpea al huir: '+nF(dmg)+'. Escapas.','eh');
+    G.dead=true;clearInterval(G.intC);
+    updCbt();
+    setTimeout(function(){goScreen('s-dun');updateHUD();G.maz.action=0;resumeExp();},1500);
+  }
+}
+
+function doEnemyTurn(skipPlayerAfter){
+  if(G.dead)return;
+  setTimeout(function(){
+    if(G.dead)return;
+    eAtk();
+    updCbt();
+    if(!G.dead)checkEnd();
+    if(!G.dead&&!skipPlayerAfter){
+      // Tick skill cooldowns
+      tickSkillCDs();
+      setTimeout(function(){if(!G.dead)startPlayerTurn();},400);
+    } else if(!G.dead&&skipPlayerAfter){
+      // After Veloz first strike, start player turn
+      tickSkillCDs();
+      setTimeout(function(){if(!G.dead)startPlayerTurn();},400);
+    }
+  },500);
+}
+
+function tickSkillCDs(){
+  var j=G.j;if(!j.skillCDs)return;
+  Object.keys(j.skillCDs).forEach(function(id){
+    if(j.skillCDs[id]>0)j.skillCDs[id]--;
+  });
+}
+
+function hideMenus(){
+  document.getElementById('turn-menu').style.display='none';
+  document.getElementById('skill-submenu').style.display='none';
+  document.getElementById('auto-indicator').style.display='none';
+}
+
+function toggleCombatMode(){
+  G.combatManual=!G.combatManual;
+  var mb=document.getElementById('mode-btn');
+  if(mb)mb.textContent=G.combatManual?'⚙ Auto':'✋ Manual';
+  var mba=document.getElementById('mode-btn-auto');
+  if(mba)mba.textContent=G.combatManual?'Manual':'Manual';
+  cLog(G.combatManual?'Modo manual.':'Modo automático.','inf');
+  // If switching to auto mid-turn, continue
+  if(!G.combatManual){
+    hideMenus();
+    document.getElementById('auto-indicator').style.display='block';
+    setTimeout(function(){if(!G.dead)autoTurn();},400);
+  } else {
+    document.getElementById('auto-indicator').style.display='none';
+    showTurnMenu();
+  }
+}
+
+function checkMech(){
+  var e=G.en;if(e.mechDone)return;
+  e.mechDone=true;
+  var tag=document.getElementById('enemy-status-tag');
+  if(e.tipo==='Ofensivo'){
+    cLog(e.name+' entra en FURIA. Ataque +50%.','rage');
+    e.st.atk=Math.round(e.st.atk*1.5);
+    tag.textContent='FURIA';tag.style.color='#c03030';tag.style.borderColor='#c03030';tag.style.display='inline';
+  } else if(e.tipo==='Defensivo'){
+    cLog(e.name+' adopta POSTURA DE ESCUDO. Defensa +80%.','mech');
+    e.st.def=Math.round(e.st.def*1.8);
+    tag.textContent='ESCUDO';tag.style.color='#4090c0';tag.style.borderColor='#4090c0';tag.style.display='inline';
+  } else if(e.tipo==='Veloz'){
+    cLog(e.name+' entra en FRENESÍ. Ataque +40%.','mech');
+    e.st.atk=Math.round(e.st.atk*1.4);
+    tag.textContent='FRENESÍ';tag.style.color='#90c040';tag.style.borderColor='#90c040';tag.style.display='inline';
+  } else if(e.tipo==='Letal'){
+    cLog(e.name+' segrega VENENO. -4% vida por turno.','rage');
+    tag.textContent='VENENO';tag.style.color='#80c040';tag.style.borderColor='#80c040';tag.style.display='inline';
+    G.en.venomActive=true;
+  }
+}
+
+function pAtk(){
+  var j=G.j,e=G.en;
+  var d=j.st.atk*(j.st.atk/(j.st.atk+e.st.def));d*=0.9+Math.random()*0.2;
+  var crit=Math.random()*100<j.st.cR;if(crit)d*=(1+j.st.cD/100);
+  j.combatHitCount=(j.combatHitCount||0)+1;
+  if(j.skill==='Instinto'&&j.combatHitCount<=1)d*=1.15;
+  if(j.passiveSkills&&j.passiveSkills.indexOf('acero_frio')!==-1&&j.combatHitCount<=2)d*=1.25;
+  if(j.passiveSkills&&j.passiveSkills.indexOf('represalia')!==-1&&j.pendingRepresalia){j.pendingRepresalia=false;d*=1.40;cLog('¡Represalia!','cr');}
+  d=Math.round(d);e.st.hp-=d;
+  var vh=Math.round(d*j.st.vamp/100);if(vh>0)j.st.hp=Math.min(j.st.hpM,j.st.hp+vh);
+  cLog(crit?'¡CRÍTICO! +'+nF(d)+' daño.':'Atacas por '+nF(d)+'.',crit?'cr':'hi');
+  updCbt();checkEnd();
+}
+
+function eAtk(){
+  var j=G.j,e=G.en;
+  var d=e.st.atk*(e.st.atk/(e.st.atk+j.st.def));d*=0.9+Math.random()*0.2;
+  var crit=Math.random()*100<e.st.cR;if(crit)d*=1.5;
+  // Letal venom tick on enemy turn
+  if(e.venomActive){var vd=Math.round(j.st.hpM*0.04);j.st.hp=Math.max(0,j.st.hp-vd);cLog('Veneno: -'+nF(vd)+'.','eh');}
+  // Class passives
+  if(j.skill==='Piel de Hierro')d*=0.85;
+  if(j.skill==='Reflejo'){var ref=Math.round(d*(0.12+(j.bon.reflect||0)/100));e.st.hp-=ref;}
+  if(j.nextDmgReduce>0){d*=(1-j.nextDmgReduce);j.nextDmgReduce=0;}
+  if(j.passiveSkills&&j.passiveSkills.indexOf('ultimo_recurso')!==-1&&j.st.hp<j.st.hpM*0.25)d*=0.80;
+  if(j.shield>0){var abs=Math.min(j.shield,Math.round(d));d-=abs;j.shield-=abs;if(d<0)d=0;cLog('Escudo absorbe '+nF(abs)+'.','mech');}
+  if(j.counterReady){j.counterReady=false;var cnt=Math.round(d*1.8);e.st.hp-=cnt;cLog('¡CONTRAATAQUE! '+nF(cnt)+' daño.','cr');}
+  d=Math.round(d);j.st.hp=Math.max(0,j.st.hp-d);
+  if(crit&&j.passiveSkills&&j.passiveSkills.indexOf('represalia')!==-1)j.pendingRepresalia=true;
+  cLog(crit?e.name+' te golpea críticamente: '+nF(d)+'.':e.name+' te ataca: '+nF(d)+'.','eh');
+}
+
+function cLog(m,c){var l=document.getElementById('clog'),p=document.createElement('p');if(c)p.className=c;p.innerHTML=m;l.appendChild(p);l.scrollTop=l.scrollHeight;}
+
+function updCbt(){
+  var j=G.j,e=G.en;
+  document.getElementById('cph').style.width=pct(j.st.hp,j.st.hpM)+'%';
+  document.getElementById('cphv').textContent=nF(j.st.hp)+' / '+nF(j.st.hpM);
+  document.getElementById('ceh').style.width=pct(e.st.hp,e.st.hpM)+'%';
+  document.getElementById('cehv').textContent=nF(e.st.hp)+' / '+nF(e.st.hpM);
+  // Speed bars show turn order
+  document.getElementById('spd-p-bar').style.width='100%';
+  document.getElementById('spd-e-bar').style.width='100%';
+  document.getElementById('spd-p-val').textContent=G.combatManual?'Tu turno':'Auto';
+  document.getElementById('spd-p-val').style.color='#c9943a';
+  document.getElementById('spd-e-val').textContent=e.st.spd.toFixed(2)+'/s';
+  // Mini stats
+  document.getElementById('cbt-p-atk').textContent=nF(j.st.atk);
+  document.getElementById('cbt-p-def').textContent=nF(j.st.def);
+  document.getElementById('cbt-p-spd').textContent=j.st.atkSpd.toFixed(2);
+  document.getElementById('cbt-p-vamp').textContent=j.st.vamp>0?j.st.vamp.toFixed(1)+'%':'—';
+  document.getElementById('cbt-e-atk').textContent=nF(e.st.atk);
+  document.getElementById('cbt-e-def').textContent=nF(e.st.def);
+  document.getElementById('cbt-e-spd').textContent=e.st.spd.toFixed(2);
+  document.getElementById('cbt-e-tipo').textContent=e.tipo;
+}
+
+function checkEnd(){
+  var j=G.j,e=G.en;
+  if(j.st.hp<=0){
+    j.st.hp=0;G.dead=true;j.deaths++;G.deathCount++;
+    hideMenus();updateLeaderboard();
+    cLog('Caíste.','eh');setTimeout(showDeath,900);
+  } else if(e.st.hp<=0){
+    e.st.hp=0;G.dead=true;e.venomActive=false;j.jungleVenom=false;
+    hideMenus();
+    if(e.bossData){cLog(e.name+': "'+e.bossData.death+'"','boss');}
+    j.kills++;j.gold+=e.rew.gold;
+    if(!j.firstKill){j.firstKill=true;var m=SYS_FIRSTKILL[rnd(0,SYS_FIRSTKILL.length-1)];cLog('['+m[0][0]+'] '+m[1],'inf');}
+    if(j.passiveSkills&&j.passiveSkills.indexOf('depredador')!==-1){var hd=Math.round(j.st.hpM*0.10);j.st.hp=Math.min(j.st.hpM,j.st.hp+hd);cLog('Depredador: +'+nF(hd)+' vida.','gd');}
+    cLog(e.name+' derrotado. +'+nF(e.rew.exp)+' EXP, +'+nF(e.rew.gold)+' oro.','gd');
+    gainExp(e.rew.exp);
+    j.st.hp=Math.min(j.st.hpM,j.st.hp+Math.round(j.st.hpM*0.2));
+    if(e.rew.drop){var it=genItemDrop(e.cond,G.maz.p.floor);j.inv.push(it);cLog('Botín: <span class="'+RCLS[it.r]+'">'+it.r+'</span> — '+it.name+'.','inf');}
+    if(e.cond==='guardian'){G.maz.p.room++;if(G.maz.p.room>G.maz.p.rlim){G.maz.p.room=1;G.maz.p.floor++;if(G.post100)G.j.days++;}}
+    else{G.maz.action=0;}
+    updCbt();document.getElementById('cbr').style.display='block';
+    if(G.lvlP>0)setTimeout(showLvl,700);
+  }
+}
+
+function gainExp(amt){
+}
+
+function eAtk(){
+  var j=G.j,e=G.en;
+  var d=e.st.atk*(e.st.atk/(e.st.atk+j.st.def));d*=0.9+Math.random()*0.2;
+  var crit=Math.random()*100<e.st.cR;if(crit)d*=1.5;
+  // Legacy skills
+  if(j.skill==='Corazon de Paladin')d*=0.75;
+  // Class passives
+  if(j.skill==='Piel de Hierro')d*=0.85; // Resistente
+  if(j.skill==='Reflejo'){var ref=Math.round(d*(0.12+(j.bon.reflect||0)/100));e.st.hp-=ref;} // Espejo
+  if(j.nextDmgReduce&&j.nextDmgReduce>0){d*=(1-j.nextDmgReduce);j.nextDmgReduce=0;} // Paso atrás
+  if(j.passiveSkills&&j.passiveSkills.indexOf('ultimo_recurso')!==-1&&j.st.hp<j.st.hpM*0.25)d*=0.80;
+  // Shield absorption (Resistente active)
+  if(j.shield>0){var absorbed=Math.min(j.shield,Math.round(d));d-=absorbed;j.shield-=absorbed;if(j.shield<0)j.shield=0;}
+  // Counterattack (Espejo active)
+  if(j.counterReady){j.counterReady=false;var counter=Math.round(d*1.8);e.st.hp-=counter;cLog('¡CONTRAATAQUE! Devuelves '+nF(counter)+' daño.','cr');}
+  d=Math.round(d);j.st.hp=Math.max(0,j.st.hp-d);
+  if(j.skill==='Espinas de Egida')e.st.hp-=Math.round(d*0.15);
+  // Represalia trigger on crit
+  if(crit&&j.passiveSkills&&j.passiveSkills.indexOf('represalia')!==-1)j.pendingRepresalia=true;
+  cLog(crit?e.name+' te golpea críticamente: '+nF(d)+'.':e.name+' te ataca: '+nF(d)+'.','eh');
+}
+
+function cLog(m,c){var l=document.getElementById('clog'),p=document.createElement('p');if(c)p.className=c;p.innerHTML=m;l.appendChild(p);l.scrollTop=l.scrollHeight;}
+
+function updCbt(){
+  var j=G.j,e=G.en;
+  // HP bars
+  document.getElementById('cph').style.width=pct(j.st.hp,j.st.hpM)+'%';
+  document.getElementById('cphv').textContent=nF(j.st.hp)+' / '+nF(j.st.hpM);
+  document.getElementById('ceh').style.width=pct(e.st.hp,e.st.hpM)+'%';
+  document.getElementById('cehv').textContent=nF(e.st.hp)+' / '+nF(e.st.hpM);
+  // Speed bars
+  var sp=G.spdP||0, se=G.spdE||0;
+  document.getElementById('spd-p-bar').style.width=sp+'%';
+  document.getElementById('spd-e-bar').style.width=se+'%';
+  var pLabel=G.combatManual?(G.manualReady?'¡LISTO!':Math.round(sp)+'%'):j.st.atkSpd.toFixed(2)+'/s';
+  document.getElementById('spd-p-val').textContent=pLabel;
+  document.getElementById('spd-p-val').style.color=G.manualReady?'#ffaaaa':'#c9943a';
+  document.getElementById('spd-e-val').textContent=G.en.st.spd.toFixed(2)+'/s';
+  // Mini stat HUD
+  document.getElementById('cbt-p-atk').textContent=nF(j.st.atk);
+  document.getElementById('cbt-p-def').textContent=nF(j.st.def);
+  document.getElementById('cbt-p-spd').textContent=j.st.atkSpd.toFixed(2);
+  document.getElementById('cbt-p-vamp').textContent=j.st.vamp>0?j.st.vamp.toFixed(1)+'%':'—';
+  document.getElementById('cbt-e-atk').textContent=nF(e.st.atk);
+  document.getElementById('cbt-e-def').textContent=nF(e.st.def);
+  document.getElementById('cbt-e-spd').textContent=e.st.spd.toFixed(2);
+  document.getElementById('cbt-e-tipo').textContent=e.tipo;
+}
+
+function checkEnd(){
+  var j=G.j,e=G.en;
+  if(j.st.hp<=0){
+    j.st.hp=0;G.dead=true;clearInterval(G.intC);e.venomActive=false;j.deaths++;G.deathCount++;
+    if(G.skillTimer){clearInterval(G.skillTimer);G.skillTimer=null;}
+    
+    cLog('Caíste.','eh');setTimeout(showDeath,900);
+  } else if(e.st.hp<=0){
+    e.st.hp=0;G.dead=true;clearInterval(G.intC);e.venomActive=false;
+    
+    if(e.bossData){cLog(e.name+': "'+e.bossData.death+'"','boss');}
+    j.kills++;j.gold+=e.rew.gold;
+    // Depredador passive — heal on kill
+    if(j.passiveSkills&&j.passiveSkills.indexOf('depredador')!==-1){
+      var healDep=Math.round(j.st.hpM*0.10);j.st.hp=Math.min(j.st.hpM,j.st.hp+healDep);
+      cLog('Depredador: +'+nF(healDep)+' vida.','gd');
+    }
+    if(G.skillTimer){clearInterval(G.skillTimer);G.skillTimer=null;}
+    if(!j.firstKill){j.firstKill=true;setTimeout(function(){var m=SYS_FIRSTKILL[rnd(0,SYS_FIRSTKILL.length-1)];cLog('['+m[0][0]+'] '+m[1],'inf');},500);}
+    cLog(e.name+' derrotado. +'+nF(e.rew.exp)+' EXP, +'+nF(e.rew.gold)+' oro.','gd');
+    gainExp(e.rew.exp);
+    j.st.hp=Math.min(j.st.hpM,j.st.hp+Math.round(j.st.hpM*0.2));
+    if(e.rew.drop){var it=genItemDrop(e.cond,G.maz.p.floor);j.inv.push(it);cLog('Botín: <span class="'+RCLS[it.r]+'">'+it.r+'</span> — '+it.name+'.','inf');}
+    if(e.cond==='guardian'){
+      G.maz.p.room++;
+      if(G.maz.p.room>G.maz.p.rlim){
+        G.maz.p.room=1;G.maz.p.floor++;
+        if(G.post100)G.j.days++;
+      }
+    } else {G.maz.action=0;}
+    updCbt();document.getElementById('cbr').style.display='block';
+    if(G.lvlP>0)setTimeout(showLvl,700);
+  }
+}
+
+function showDeath(){
+  var j=G.j;
+  var dm=getDeathMsg(G.deathCount);
+  document.getElementById('deathmsg').textContent=j.n+' — Piso '+G.maz.p.floor+', Sala '+G.maz.p.room+'. '+j.kills+' eliminaciones.'+(G.post100?' · '+j.days+' días ganados.':'');
+  var sysHtml='';
+  if(dm.sys){sysHtml='<div class="voz">['+dm.sys[0][0]+']</div><em style="color:'+dm.sys[0][1]+'bb;">'+dm.sys[1]+'</em>';}
+  else{sysHtml='<div class="voz">[silencio]</div><em style="color:#4a3a6a;">...</em>';}
+  document.getElementById('deathsys').innerHTML=sysHtml;
+  document.getElementById('ov-dead').classList.add('on');
+}
+
+function respawn(){
+  document.getElementById('ov-dead').classList.remove('on');
+  var j=G.j;
+  j.lvl=1;j.exp={c:0,m:100,cl:0,ml:100,pend:0};
+  j.bon={hp:0,atk:0,def:0,atkSpd:0,vamp:0,cR:0,cD:0};
+  j.passiveSkills=[];j.skillCDs={};j.shield=0;j.combatHitCount=0;
+  // Re-apply class base bonuses
+  var cls=j.clase?CLASSES[j.clase]:null;
+  if(cls){
+    Object.keys(cls.bonusBase).forEach(function(k){
+      if(k==='atkSpd')j.base.atkSpd+=cls.bonusBase[k];
+      else if(k==='vamp')j.base.vamp+=cls.bonusBase[k];
+      else j.bon[k]+=cls.bonusBase[k];
+    });
+    j.skill=cls.passiveSkill;
+    j.activeSkills=cls.actives.map(function(a){return a.id;});
+    cls.actives.forEach(function(a){j.skillCDs[a.id]=0;});
+  }
+  j.temp={atk:0,atkSpd:0};calc();j.st.hp=j.st.hpM;
+  G.maz={p:{floor:1,room:1,rlim:5},action:0,corpsesDone:{},usedNothing:{},usedBlessing:{},usedSafeZone:false};
+  G.exploring=false;G.paused=true;G.inEvent=false;G.lvlP=0;G.post100=false;
+  clearInterval(G.intD);clearInterval(G.intC);
+  openDungeon();
+  var deathText=G.deathCount<=2?'Despiertas de nuevo. No recuerdas nada. Solo tu nombre.':'Despiertas. Ya sabes exactamente dónde estás. Cuántas veces ha pasado esto?';
+  setTimeout(function(){addLog(deathText,'#607060');},700);
+}
+
+function afterCombat(){
+  // Recover trap debuffs after each combat
+  var j=G.j;
+  function recoverTrap(key,stat,amt,label){
+    if(j[key]&&j[key]>0){j[key]--;if(j[key]===0){j.bon[stat]+=amt;addLog('El efecto de la trampa desaparece. '+label+' restaurado.','#508050');calc();updateHUD();}}
+  }
+  recoverTrap('trapDef','def',8,'DEF');recoverTrap('trapAtk','atk',8,'ATQ');
+  recoverTrap('trapSpd','atkSpd',0.3,'VEL');recoverTrap('trapCR','cR',5,'T.Crítico');recoverTrap('trapCD','cD',15,'D.Crítico');
+  hideMenus();goScreen('s-dun');updateHUD();resumeExp();
+}
+
+function gainExp(amt){
+  var j=G.j;j.exp.c+=amt;j.exp.cl+=amt;
+  while(j.exp.c>=j.exp.m){
+    var exc=j.exp.c-j.exp.m,inc=Math.floor(j.exp.m*0.1+100);
+    j.exp.m+=inc;j.exp.ml=inc;j.lvl++;
+    j.bon.hp+=4;j.bon.atk+=2;j.bon.def+=2;j.bon.atkSpd+=0.15;j.bon.cR+=0.1;j.bon.cD+=0.25;
+    j.exp.cl=exc;j.exp.pend=(j.exp.pend||0)+1;
+    j.st.hp=Math.min(j.st.hpM,j.st.hp+Math.round(j.st.hpM*0.2));
+    cLog('¡Nivel '+j.lvl+'!','gd');
+  }
+  G.lvlP=j.exp.pend||0;j.exp.pend=0;calc();
+}
+
+var LVO=[{k:'hp',l:'VIDA',p:10,d:'+10% Vida'},{k:'atk',l:'ATAQUE',p:8,d:'+8% Ataque'},{k:'def',l:'DEFENSA',p:8,d:'+8% Defensa'},{k:'atkSpd',l:'VELOCIDAD',p:3,d:'+3% Vel. Ataque'},{k:'vamp',l:'VAMPIRISMO',p:0.5,d:'+0.5% Vampirismo'},{k:'cR',l:'T.CRÍTICO',p:1,d:'+1% Tasa Crítica'},{k:'cD',l:'D.CRÍTICO',p:6,d:'+6% Daño Crítico'}];
+var rrLeft=2;
+
+function showLvl(){rrLeft=2;renderLvl();document.getElementById('ov-lvl').classList.add('on');}
+function renderLvl(){
+  var pool=LVO.slice(),ch=[];
+  // Every 5 levels, offer a class passive unlock if available
+  var j=G.j;
+  var cls=j.clase?CLASSES[j.clase]:null;
+  var classOption=null;
+  if(cls&&j.lvl%5===0){
+    var available=cls.passiveUnlocks.filter(function(u){
+      return j.lvl>=u.lvl&&(!j.passiveSkills||j.passiveSkills.indexOf(u.id)===-1);
+    });
+    if(available.length>0){
+      var u=available[0];
+      classOption={isClassUnlock:true,unlock:u,l:'⚔ '+u.name,d:u.desc+'  [Habilidad de Clase]'};
+    }
+  }
+  while(ch.length<(classOption?2:3)&&pool.length>0){var i=rnd(0,pool.length-1);ch.push(pool.splice(i,1)[0]);}
+  if(classOption)ch.splice(rnd(0,ch.length),0,classOption);
+  document.getElementById('lvlrem').textContent=(G.lvlP||1)+' nivel(es) pendientes';
+  var g=document.getElementById('lvlchoices');g.innerHTML='';
+  ch.forEach(function(o){
+    var d=document.createElement('div');d.className='lc';
+    var color=o.isClassUnlock?'#9060c0':'#ffd700';
+    d.innerHTML='<div style="font-family:Cinzel,serif;font-size:0.7rem;color:'+color+';margin-bottom:0.22rem;">'+o.l+'</div><div style="font-size:0.7rem;color:#8a7a6a;">'+o.d+'</div>';
+    d.onclick=function(){pickLvl(o);};g.appendChild(d);
+  });
+  var rb=document.getElementById('rrbtn');rb.textContent='Relanzar ('+rrLeft+' restantes)';rb.disabled=rrLeft<=0;
+}
+function reroll(){if(rrLeft<=0)return;rrLeft--;renderLvl();}
+function pickLvl(o){
+  if(o.isClassUnlock){
+    // Apply class passive unlock
+    if(!G.j.passiveSkills)G.j.passiveSkills=[];
+    G.j.passiveSkills.push(o.unlock.id);
+    o.unlock.fn();
+    cLog('Habilidad desbloqueada: '+o.unlock.name+'!','mech');
+  } else {
+    G.j.bon[o.k]+=o.p;
+  }
+  G.lvlP=Math.max(0,(G.lvlP||1)-1);calc();
+  if(G.lvlP>0){rrLeft=2;renderLvl();}else document.getElementById('ov-lvl').classList.remove('on');
+}
+
+var RARES=['Común','Infrecuente','Raro','Épico','Legendario','Reliquia'];
+var RWTS=[0.7,0.2,0.04,0.03,0.02,0.01];
+var RCLS={'Común':'rc','Infrecuente':'ru','Raro':'rr','Épico':'re','Legendario':'rl','Reliquia':'rk'};
+
+// Stat pool definitions
+var SP={
+  atk: {k:'atk',l:'ATQ',mn:10,mx:80},
+  def: {k:'def',l:'DEF',mn:8,mx:60},
+  hp:  {k:'hp', l:'Vida',mn:50,mx:400},
+  spd: {k:'atkSpd',l:'Vel.Atq',mn:0.05,mx:0.3,dc:2},
+  vamp:{k:'vamp',l:'Vamp%',mn:0.5,mx:5,dc:1},
+  cr:  {k:'cR',l:'T.Crit%',mn:1,mx:10,dc:1},
+  cd:  {k:'cD',l:'D.Crit%',mn:5,mx:40,dc:1}
+};
+
+// Item types with their own stat pools: [main stats, secondary stats]
+var ITEM_TYPES={
+  'Espada':          {isW:true, main:[SP.atk,SP.spd],      sec:[SP.cd,SP.cr,SP.vamp]},
+  'Hacha':           {isW:true, main:[SP.atk,SP.cd],       sec:[SP.spd,SP.cr]},
+  'Martillo':        {isW:true, main:[SP.atk,SP.def],      sec:[SP.hp,SP.cd]},
+  'Daga':            {isW:true, main:[SP.spd,SP.cr],       sec:[SP.atk,SP.cd,SP.vamp]},
+  'Mangual':         {isW:true, main:[SP.atk,SP.cr],       sec:[SP.cd,SP.spd]},
+  'Guadana':         {isW:true, main:[SP.atk,SP.vamp],     sec:[SP.cd,SP.spd]},
+  'Lanza':           {isW:true, main:[SP.atk,SP.spd],      sec:[SP.cr,SP.def]},
+  'Arco':            {isW:true, main:[SP.cr,SP.cd],        sec:[SP.atk,SP.spd]},
+  'Armadura de Placas':{isW:false,main:[SP.def,SP.hp],     sec:[SP.atk]},
+  'Cota de Malla':   {isW:false,main:[SP.def,SP.hp],       sec:[SP.spd]},
+  'Armadura de Cuero':{isW:false,main:[SP.def,SP.spd],     sec:[SP.cr,SP.hp]},
+  'Escudo Torre':    {isW:false,main:[SP.def,SP.hp],       sec:[]},
+  'Broquel':         {isW:false,main:[SP.def,SP.cr],       sec:[SP.spd]},
+  'Gran Yelmo':      {isW:false,main:[SP.def,SP.hp],       sec:[]},
+  'Yelmo Oscuro':    {isW:false,main:[SP.def,SP.cr],       sec:[SP.cd]},
+  'Capa de Sombras': {isW:false,main:[SP.spd,SP.vamp],     sec:[SP.cr,SP.def]}
+};
+
+var ALL_TYPES=Object.keys(ITEM_TYPES);
+
+// Narrative names by rarity — Común/Infrecuente use base name, Raro+ get narrative
+var NARRATIVE_NAMES={
+  'Raro':{
+    'Espada':['Espada del Tercer Corredor','Espada sin Filo que Corta Igual','Hoja del Guardián Caído'],
+    'Hacha':['Hacha del Piso Olvidado','Hacha de los Primeros Corredores','Hacha sin Nombre'],
+    'Martillo':['Martillo del Constructor','Martillo del Ciclo Roto','Martillo que Nunca Descansó'],
+    'Daga':['Daga del Pasillo Largo','Daga de la Muestra Perdida','Daga sin Dueño'],
+    'Mangual':['Mangual del Guardián Cuarto','Mangual del Olvido','Cadena que Recuerda'],
+    'Guadana':['Guadaña del Corredor Final','Guadaña sin Portador','Hoja del Ciclo'],
+    'Lanza':['Lanza del Primer Descenso','Lanza del Pasillo Norte','Punta que Sobrevivió'],
+    'Arco':['Arco sin Cuerda que Dispara Igual','Arco del Corredor Largo','Arco del Tercer Ciclo'],
+    'Armadura de Placas':['Armadura del Guardián Olvidado','Placas del Corredor Profundo','Armadura sin Dueño'],
+    'Cota de Malla':['Malla del Segundo Piso','Cota del Guardián Caído','Anillos del Ciclo Roto'],
+    'Armadura de Cuero':['Cuero del Corredor Oscuro','Armadura del Participante Perdido','Piel que Sobrevivió'],
+    'Escudo Torre':['Escudo del Muro Olvidado','Torre sin Castillo','Escudo del Guardián Cuarto'],
+    'Broquel':['Broquel del Tercer Descenso','Escudo Pequeño del Corredor','Broquel sin Historia'],
+    'Gran Yelmo':['Yelmo del Guardián Sin Nombre','Casco del Corredor Profundo','Yelmo del Ciclo Anterior'],
+    'Yelmo Oscuro':['Yelmo del Piso Olvidado','Casco de la Sombra Errante','Visera sin Portador'],
+    'Capa de Sombras':['Capa del Corredor Sin Luz','Sombra que Quedó Atrás','Capa del Tercer Ciclo']
+  },
+  'Épico':{
+    'Espada':['Espada de los Primeros','Hoja del Ciclo Sin Fin','La Espada que Bajó con Alguien'],
+    'Hacha':['Hacha de los Primeros','Hacha del Gran Descenso','El Hacha que Recuerda'],
+    'Martillo':['Martillo de los Constructores','El Martillo que Construyó esto','Golpe del Ciclo Profundo'],
+    'Daga':['Daga de los Primeros Doce','La Daga que Mató al Guardián','Colmillo del Ciclo Roto'],
+    'Mangual':['Cadenas de los Primeros','Mangual del Gran Ciclo','El Mangual que Sobrevivió Todo'],
+    'Guadana':['Guadaña de los Primeros','Hoja del Gran Descenso','La Guadaña del Piso Cero'],
+    'Lanza':['Lanza de los Primeros','El Asta del Ciclo Profundo','Punta de los Primeros Doce'],
+    'Arco':['Arco de los Primeros','El Arco del Gran Descenso','Tensión del Ciclo Sin Fin'],
+    'Armadura de Placas':['Armadura de los Primeros','Placas del Gran Ciclo','La Armadura que Bajó con el Doce'],
+    'Cota de Malla':['Malla de los Primeros','Cota del Gran Descenso','Anillos del Ciclo Profundo'],
+    'Armadura de Cuero':['Cuero de los Primeros','La Piel que Bajó con el Doce','Armadura del Gran Ciclo'],
+    'Escudo Torre':['Escudo de los Primeros','La Torre del Ciclo Roto','Muro del Gran Descenso'],
+    'Broquel':['Broquel de los Primeros','El Escudo del Ciclo Profundo','Defensa del Gran Descenso'],
+    'Gran Yelmo':['Yelmo de los Primeros','El Casco del Ciclo Sin Fin','Visera del Gran Descenso'],
+    'Yelmo Oscuro':['Yelmo de la Sombra Profunda','Casco del Gran Ciclo','El Yelmo que Vio todo'],
+    'Capa de Sombras':['Capa de los Primeros','La Sombra del Gran Ciclo','Manto del Descenso Profundo']
+  },
+  'Legendario':{
+    'Espada':['La Espada que Recordaba','La Hoja del Último Ciclo','La que Llegó al Noventa y Nueve'],
+    'Hacha':['El Hacha sin Memoria','La que Cortó al Primer Guardián','El Hacha del Último Descenso'],
+    'Martillo':['El Golpe Final','El Martillo del Último Participante','La que Nunca Paró'],
+    'Daga':['La Daga que Recordaba','La que Mató sin Querer','El Filo del Último Ciclo'],
+    'Mangual':['Las Cadenas que Eligieron','El Mangual del Último Corredor','La que Siguió Sola'],
+    'Guadana':['La Guadaña del Último Piso','La que Cosechó Guardianes','El Filo Sin Retorno'],
+    'Lanza':['La Lanza que Llegó Lejos','El Asta del Último Ciclo','La que Apuntó a la Verdad'],
+    'Arco':['El Arco sin Flecha','La Tensión del Último Ciclo','El que Disparó una Sola Vez'],
+    'Armadura de Placas':['La Armadura del Último Ciclo','La que Aguantó Todo','Placas del No Rendirse'],
+    'Cota de Malla':['La Malla que Sobrevivió Todo','La Cota del Último Participante','Anillos del No Rendirse'],
+    'Armadura de Cuero':['La Piel del Último Ciclo','La que Absorbió Todo','Cuero del No Rendirse'],
+    'Escudo Torre':['La Torre del Último Ciclo','El Muro que Resistió Todo','El Escudo del No Rendirse'],
+    'Broquel':['El Broquel del Último Ciclo','La Defensa Final','El que Bloqueó Todo'],
+    'Gran Yelmo':['El Yelmo del Último Ciclo','La Visera que Vio la Verdad','El Casco del No Rendirse'],
+    'Yelmo Oscuro':['El Yelmo que Vio el Cien','La Sombra del Último Ciclo','El Casco de la Verdad'],
+    'Capa de Sombras':['La Capa del Último Ciclo','La Sombra que Llegó al Cien','El Manto del No Rendirse']
+  },
+  'Reliquia':{
+    'Espada':['Espada de la Muestra #12','La Hoja del Primer Participante','Espada del Último Alcalde'],
+    'Hacha':['Hacha de la Muestra #91','El Hacha del Sector V-7','Hacha del Ciclo Sin Resolver'],
+    'Martillo':['Martillo de los Constructores Originales','El Golpe que Construyó la Mazmorra','Martillo de la Muestra #1'],
+    'Daga':['Daga de la Muestra #12','La que Encontró la Puerta del 97','Daga del Sector V-7'],
+    'Mangual':['Cadenas de la Muestra #412','El Mangual que Desobedeció','Cadenas del Ciclo Sin Resolver'],
+    'Guadana':['Guadaña de la Muestra #91','La que Casi Llegó al Cien','Guadaña del Sector V-7'],
+    'Lanza':['Lanza de los Primeros Doce','La que Apuntó a los Magos','Lanza del Ciclo Sin Resolver'],
+    'Arco':['Arco de la Muestra #788','El que Disparó Hacia Arriba','Arco del Sector V-7'],
+    'Armadura de Placas':['Armadura de la Muestra #12','Placas del Primer Descenso','La que Sobrevivió Todos los Ciclos'],
+    'Cota de Malla':['Malla de la Muestra #91','La Cota del Sector V-7','Anillos del Ciclo Sin Resolver'],
+    'Armadura de Cuero':['Cuero de la Muestra #412','La Piel del Primer Participante','Armadura del Ciclo Sin Resolver'],
+    'Escudo Torre':['Escudo de la Muestra #12','La Torre que Aguantó Todo','El Muro del Sector V-7'],
+    'Broquel':['Broquel de la Muestra #788','La Defensa del Primer Ciclo','El Escudo del Sector V-7'],
+    'Gran Yelmo':['Yelmo de la Muestra #12','El Casco que Vio la Verdad','Yelmo del Sector V-7'],
+    'Yelmo Oscuro':['Yelmo de la Muestra #91','El Casco del Primer Descenso','Yelmo del Ciclo Sin Resolver'],
+    'Capa de Sombras':['Capa de la Muestra #412','La Sombra que Llegó al Noventa','Manto del Sector V-7']
+  }
+};
+
+// Zone-specific item type pools — thematically appropriate drops per zone
+var ZONE_DROPS={
+  'LA CAÍDA':           ['Espada','Daga','Armadura de Cuero','Broquel','Gran Yelmo'],
+  'EL BOSQUE ETERNO':   ['Arco','Daga','Capa de Sombras','Armadura de Cuero','Mangual'],
+  'EL REINO NO-MUERTO': ['Espada','Escudo Torre','Gran Yelmo','Cota de Malla','Guadana'],
+  'EL ABISMO DE FUEGO': ['Hacha','Mangual','Armadura de Placas','Yelmo Oscuro','Guadana'],
+  'LAS PROFUNDIDADES':  ['Lanza','Daga','Capa de Sombras','Cota de Malla','Arco'],
+  'EL CIELO CAÍDO':     ['Espada','Lanza','Armadura de Placas','Gran Yelmo','Broquel'],
+  'EL MECANISMO':       ['Martillo','Escudo Torre','Armadura de Placas','Cota de Malla','Lanza'],
+  'EL LABERINTO DE SUEÑOS':['Daga','Capa de Sombras','Yelmo Oscuro','Arco','Mangual'],
+  'LA JUNGLA PRIMORDIAL':['Hacha','Lanza','Armadura de Cuero','Broquel','Guadana'],
+  'LA CIUDAD OLVIDADA': ['Espada','Martillo','Cota de Malla','Gran Yelmo','Escudo Torre']
+};
+
+// Floor-scaled rarity weights — higher floors shift probability toward better items
+function getRarityWeights(floor,isGuardian){
+  if(isGuardian){
+    // Guardians: minimum Raro, scaled up by floor
+    var bonus=Math.min(floor*0.003,0.15);
+    return [0,0,0.55-bonus,0.25,0.12+bonus*0.5,0.08+bonus*0.5];
+  }
+  // Normal enemies: starts common-heavy, improves with floor
+  var f=Math.min(floor,100);
+  var shift=f*0.002; // max 0.2 shift at floor 100
+  return [
+    Math.max(0.35, 0.70-shift*2),
+    Math.min(0.40, 0.20+shift),
+    Math.min(0.14, 0.04+shift*0.5),
+    Math.min(0.07, 0.03+shift*0.3),
+    Math.min(0.03, 0.02+shift*0.15),
+    Math.min(0.01, 0.01+shift*0.05)
+  ];
+}
+
+function genItemDrop(cond,floor){
+  // Roll rarity based on floor and enemy type
+  var weights=getRarityWeights(floor,cond==='guardian');
+  // Normalize weights
+  var total=weights.reduce(function(a,b){return a+b;},0);
+  var r=Math.random()*total,cum=0,rar='Común';
+  for(var i=0;i<RARES.length;i++){cum+=weights[i];if(r<=cum){rar=RARES[i];break;}}
+
+  // Pick item type from zone pool
+  var th=getTheme(floor);
+  var zonePool=ZONE_DROPS[th.name]||ALL_TYPES;
+  var typeName=zonePool[rnd(0,zonePool.length-1)];
+  var type=ITEM_TYPES[typeName];
+
+  // Generate name
+  var name;
+  var narNames=NARRATIVE_NAMES[rar];
+  if(narNames&&narNames[typeName]){
+    var namePool=narNames[typeName];
+    name=namePool[rnd(0,namePool.length-1)];
+  } else {
+    name=typeName;
+  }
+
+  // Build stats
+  var mainStats=type.main.slice();
+  var secStats=type.sec.slice();
+  var nc={'Común':2,'Infrecuente':3,'Raro':4,'Épico':5,'Legendario':6,'Reliquia':8}[rar];
+  var mult=RARES.indexOf(rar)+1;
+  var stats=[];
+  var mainCount=Math.min(mainStats.length,Math.ceil(nc/2));
+  var mainPool=mainStats.slice();
+  for(var j=0;j<mainCount&&mainPool.length>0;j++){
+    var idx=rnd(0,mainPool.length-1),s=mainPool.splice(idx,1)[0];
+    var v=s.dc?parseFloat(((s.mn+Math.random()*(s.mx-s.mn))*mult*0.4).toFixed(s.dc)):Math.round((s.mn+Math.random()*(s.mx-s.mn))*mult*0.4);
+    stats.push({k:s.k,l:s.l,v:v});
+  }
+  var secPool=secStats.slice();
+  while(stats.length<nc&&secPool.length>0){
+    var idx2=rnd(0,secPool.length-1),s2=secPool.splice(idx2,1)[0];
+    var already=false;for(var x=0;x<stats.length;x++){if(stats[x].k===s2.k){already=true;break;}}
+    if(already)continue;
+    var v2=s2.dc?parseFloat(((s2.mn+Math.random()*(s2.mx-s2.mn))*mult*0.4).toFixed(s2.dc)):Math.round((s2.mn+Math.random()*(s2.mx-s2.mn))*mult*0.4);
+    stats.push({k:s2.k,l:s2.l,v:v2});
+  }
+  return{name:name,type:typeName,r:rar,stats:stats,gold:Math.round(10*Math.pow(2,RARES.indexOf(rar)))};
+}
+
+function genItem(){
+  // Roll rarity
+  var r=Math.random(),cum=0,rar='Común';
+  for(var i=0;i<RARES.length;i++){cum+=RWTS[i];if(r<=cum){rar=RARES[i];break;}}
+
+  // Pick item type
+  var typeName=ALL_TYPES[rnd(0,ALL_TYPES.length-1)];
+  var type=ITEM_TYPES[typeName];
+
+  // Generate name
+  var name;
+  var narNames=NARRATIVE_NAMES[rar];
+  if(narNames&&narNames[typeName]){
+    var pool=narNames[typeName];
+    name=pool[rnd(0,pool.length-1)];
+  } else {
+    name=typeName; // Común/Infrecuente use base name
+  }
+
+  // Build stat pool from item type
+  var mainStats=type.main.slice();
+  var secStats=type.sec.slice();
+  var nc={'Común':2,'Infrecuente':3,'Raro':4,'Épico':5,'Legendario':6,'Reliquia':8}[rar];
+  var mult=RARES.indexOf(rar)+1;
+  var stats=[];
+
+  // Always include at least one main stat
+  var mainCount=Math.min(mainStats.length, Math.ceil(nc/2));
+  var mainPool=mainStats.slice();
+  for(var j=0;j<mainCount&&mainPool.length>0;j++){
+    var idx=rnd(0,mainPool.length-1);
+    var s=mainPool.splice(idx,1)[0];
+    var v=s.dc?parseFloat(((s.mn+Math.random()*(s.mx-s.mn))*mult*0.4).toFixed(s.dc)):Math.round((s.mn+Math.random()*(s.mx-s.mn))*mult*0.4);
+    stats.push({k:s.k,l:s.l,v:v});
+  }
+
+  // Fill remaining slots from secondary pool
+  var secPool=secStats.slice();
+  while(stats.length<nc&&secPool.length>0){
+    var idx2=rnd(0,secPool.length-1);
+    var s2=secPool.splice(idx2,1)[0];
+    // avoid duplicates
+    var already=false;for(var x=0;x<stats.length;x++){if(stats[x].k===s2.k){already=true;break;}}
+    if(already)continue;
+    var v2=s2.dc?parseFloat(((s2.mn+Math.random()*(s2.mx-s2.mn))*mult*0.4).toFixed(s2.dc)):Math.round((s2.mn+Math.random()*(s2.mx-s2.mn))*mult*0.4);
+    stats.push({k:s2.k,l:s2.l,v:v2});
+  }
+
+  return{name:name,type:typeName,r:rar,stats:stats,gold:Math.round(10*Math.pow(2,RARES.indexOf(rar)))};
+}
+
+function openInv(){G.exploring=false;clearInterval(G.intD);renderInv();document.getElementById('ov-inv').classList.add('on');}
+function closeInv(){document.getElementById('ov-inv').classList.remove('on');if(!G.inEvent&&!G.paused)resumeExp();}
+function renderInv(){
+  var j=G.j;
+  document.getElementById('icount').textContent=j.inv.length;
+  document.getElementById('ecount').textContent=j.equip.length;
+  var il=document.getElementById('ilist');il.innerHTML='';
+  var rarClass={'Épico':'rarity-epico','Legendario':'rarity-legendario','Reliquia':'rarity-reliquia'};
+  j.inv.forEach(function(it,i){
+    var rc=rarClass[it.r]||'';
+    var d=document.createElement('div');d.className='ic'+(rc?' '+rc:'');
+    d.innerHTML='<span class="'+RCLS[it.r]+'">'+it.r+'</span><br><span>'+it.name+'</span>';
+    d.onclick=function(){showItem(it,i,false);};il.appendChild(d);
+  });
+  var el=document.getElementById('elist');el.innerHTML='';
+  j.equip.forEach(function(it,i){
+    var rc=rarClass[it.r]||'';
+    var d=document.createElement('div');d.className='ic'+(rc?' '+rc:'');
+    if(!rc)d.style.borderColor='#5a3a10';
+    d.innerHTML='<span class="'+RCLS[it.r]+'">'+it.r+'</span> <span style="font-size:0.66rem;color:var(--gold);border:1px solid var(--gold);padding:0 0.28rem;border-radius:2px;">EQ</span><br><span>'+it.name+'</span>';
+    d.onclick=function(){showItem(it,i,true);};el.appendChild(d);
+  });
+}
+function showItem(it,idx,isEq){
+  var b=document.getElementById('itembox');
+  var sh=it.stats.map(function(s){return '<div style="display:flex;justify-content:space-between;font-size:0.78rem;padding:0.16rem 0;border-bottom:1px solid #161008;"><span>'+s.l+'</span><span style="color:#e0c870;">+'+s.v+'</span></div>';}).join('');
+  var canEq=!isEq&&G.j.equip.length<6;
+  var typeLine=it.type&&it.type!==it.name?'<p style="font-size:0.7rem;color:#5a4a3a;margin-bottom:0.4rem;">'+it.type+'</p>':'';
+  var bh=isEq?'<button class="btn red" onclick="doUnequip('+idx+')" style="width:100%;margin-top:0.35rem;">Desequipar</button>':(canEq?'<button class="btn gold" onclick="doEquip('+idx+')" style="width:100%;margin-top:0.3rem;">Equipar</button>':'')+'<button class="btn red" onclick="doSell('+idx+')" style="width:100%;margin-top:0.3rem;">Vender ('+it.gold+' oro)</button>';
+  b.innerHTML='<h3 style="color:var(--gold);margin-bottom:0.18rem;font-size:0.85rem;font-style:italic;">'+it.name+'</h3>'+typeLine+'<p class="'+RCLS[it.r]+'" style="font-size:0.76rem;margin-bottom:0.45rem;">'+it.r+'</p>'+sh+bh+'<button class="btn" onclick="closeItemOv()" style="width:100%;margin-top:0.3rem;">Cerrar</button>';
+  document.getElementById('ov-item').classList.add('on');
+}
+function closeItemOv(){document.getElementById('ov-item').classList.remove('on');renderInv();}
+function doEquip(i){var j=G.j;if(j.equip.length>=6)return;j.equip.push(j.inv.splice(i,1)[0]);applyEq();calc();closeItemOv();updateHUD();}
+function doUnequip(i){var j=G.j;j.inv.push(j.equip.splice(i,1)[0]);applyEq();calc();closeItemOv();updateHUD();}
+function doSell(i){var j=G.j,it=j.inv.splice(i,1)[0];j.gold+=it.gold;closeItemOv();updateHUD();}
+function sellCommon(){var j=G.j;j.inv.filter(function(i){return i.r==='Común';}).forEach(function(i){j.gold+=i.gold;});j.inv=j.inv.filter(function(i){return i.r!=='Común';});updateHUD();renderInv();}
+function unequipAll(){var j=G.j;j.inv=j.inv.concat(j.equip);j.equip=[];applyEq();calc();updateHUD();renderInv();}
+// ── SUPABASE ─────────────────────────────────────────────────
+var SB_URL='https://yughuuiwzoctxzlntimb.supabase.co';
+var SB_KEY='sb_publishable_gp2jxsunGjZvNNLfuwTFTQ_A-9cTde4';
+
+function sbFetch(path,method,body){
+  return fetch(SB_URL+'/rest/v1/'+path,{
+    method:method||'GET',
+    headers:{
+      'apikey':SB_KEY,
+      'Authorization':'Bearer '+SB_KEY,
+      'Content-Type':'application/json',
+      'Prefer':method==='POST'?'return=representation':'',
+    },
+    body:body?JSON.stringify(body):undefined
+  }).then(function(r){return r.json();});
+}
+
+// ── SAFE ZONE UNLOCK LEVELS ──────────────────────────────────
+var SZ_UNLOCKS={
+  5: {label:'El Muro',desc:'Solo puedes leer.',read:true,write:false,lb:false},
+  10:{label:'El Muro',desc:'Puedes dejar tu nota.',read:true,write:true,lb:false},
+  15:{label:'El Registro',desc:'Top 10 participantes.',read:true,write:true,lb:'top10'},
+  25:{label:'El Registro',desc:'Top 25 con días ganados.',read:true,write:true,lb:'top25'},
+  40:{label:'El Registro Completo',desc:'Todos los datos. Tu nombre aparece.',read:true,write:true,lb:'full'}
+};
+
+function getSZUnlock(floor){
+  var result=null;
+  var keys=[5,10,15,25,40];
+  for(var i=0;i<keys.length;i++){if(floor>=keys[i])result=SZ_UNLOCKS[keys[i]];}
+  return result;
+}
+
+// ── SAFE ZONE EVENT ──────────────────────────────────────────
+function evSafeZone(){
+  var floor=G.maz.p.floor;
+  var unlock=getSZUnlock(floor);
+  if(!unlock){G.maz.action=0;resumeExp();return;}
+  addLog('Encuentras una sala diferente. Sin enemigos. Sin trampas. Marcas en las paredes.','#708070');
+  stopExp();
+  openSafezone();
+}
+
+function openSafezone(){
+  var floor=G.maz.p.floor;
+  var unlock=getSZUnlock(floor);
+  var opts=document.getElementById('sz-options');opts.innerHTML='';
+  var content=document.getElementById('sz-content');content.innerHTML='';
+
+  // Always: Altar (heal)
+  var healBtn=document.createElement('button');
+  healBtn.className='btn gold';healBtn.style.fontSize='0.72rem';
+  healBtn.textContent='🕯 Altar';
+  healBtn.onclick=function(){szAltar();};
+  opts.appendChild(healBtn);
+
+  // El Muro
+  if(unlock.read){
+    var wallBtn=document.createElement('button');
+    wallBtn.className='btn';wallBtn.style.fontSize='0.72rem';
+    wallBtn.textContent='📜 El Muro';
+    wallBtn.onclick=function(){szMuro(unlock.write);};
+    opts.appendChild(wallBtn);
+  }
+
+  // El Registro
+  if(unlock.lb){
+    var lbBtn=document.createElement('button');
+    lbBtn.className='btn';lbBtn.style.fontSize='0.72rem';
+    lbBtn.style.borderColor='#8a3030';lbBtn.style.color='#c06060';
+    lbBtn.textContent='⚔ El Registro';
+    lbBtn.onclick=function(){szRegistro(unlock.lb);};
+    opts.appendChild(lbBtn);
+  }
+
+  // Salir
+  var exitBtn=document.createElement('button');
+  exitBtn.className='btn red';exitBtn.style.fontSize='0.72rem';
+  exitBtn.textContent='↩ Seguir';
+  exitBtn.onclick=function(){closeSafezone();};
+  opts.appendChild(exitBtn);
+
+  document.getElementById('ov-safezone').classList.add('on');
+}
+
+function closeSafezone(){
+  document.getElementById('ov-safezone').classList.remove('on');
+  document.getElementById('sz-content').innerHTML='';
+  G.maz.action=0;resumeExp();
+}
+
+function szAltar(){
+  var content=document.getElementById('sz-content');
+  if(G.j.szAltarUsed){
+    content.innerHTML='<p style="font-size:0.78rem;color:#5a4a3a;font-style:italic;">Ya usaste el altar en esta zona. La llama no responde.</p>';
+    return;
+  }
+  G.j.szAltarUsed=true;
+  var h=G.j.st.hpM;G.j.st.hp=h;
+  updateHUD();
+  content.innerHTML='<p style="font-size:0.78rem;color:#508050;">La llama te envuelve. Vida completamente restaurada.</p>'
+    +'<div class="sys-box" style="margin-top:0.5rem;"><div class="voz">[Magister Vael]</div><em>Punto de restauración utilizado. La muestra ha recuperado vitalidad completa. Esperado.</em></div>';
+}
+
+function szMuro(canWrite){
+  var content=document.getElementById('sz-content');
+  content.innerHTML='<div style="font-size:0.72rem;color:#5a4a3a;margin-bottom:0.5rem;letter-spacing:0.04em;">EL MURO DE NOTAS</div>'
+    +'<div id="muro-notas" style="max-height:180px;overflow-y:auto;margin-bottom:0.5rem;"><p style="font-size:0.72rem;color:#4a3a2a;">Cargando...</p></div>';
+
+  if(canWrite&&!G.j.notaEscrita){
+    content.innerHTML+='<div style="margin-top:0.5rem;">'
+      +'<p style="font-size:0.7rem;color:#5a4a3a;margin-bottom:0.3rem;">Deja tu nota (máx. 120 caracteres):</p>'
+      +'<textarea id="nota-input" style="width:100%;background:#0d0b08;border:1px solid #3a2a1a;color:#c9b99a;padding:0.4rem;font-family:Crimson Text,serif;font-size:0.78rem;border-radius:3px;resize:none;height:55px;" maxlength="120" placeholder="Lo que quieras que sepan..."></textarea>'
+      +'<button class="btn gold" onclick="dejarNota()" style="width:100%;margin-top:0.3rem;font-size:0.72rem;">Dejar nota</button>'
+      +'</div>';
+  } else if(G.j.notaEscrita){
+    content.innerHTML+='<p style="font-size:0.7rem;color:#5a4a3a;font-style:italic;margin-top:0.3rem;">Ya dejaste tu nota en este ciclo.</p>';
+  }
+
+  // Load notes from Supabase
+  sbFetch('notas?select=autor,piso,texto,clase&order=created_at.desc&limit=15')
+    .then(function(data){
+      var div=document.getElementById('muro-notas');
+      if(!div)return;
+      if(!data||data.length===0){div.innerHTML='<p style="font-size:0.72rem;color:#4a3a2a;font-style:italic;">Las paredes están vacías. Sé el primero.</p>';return;}
+      var html='';
+      data.forEach(function(n){
+        var icon={'Resistente':'🛡','Espectro':'⚡','Drenador':'🩸','Espejo':'🔮'}[n.clase]||'?';
+        html+='<div style="background:#080f08;border:1px solid #1a3a1a;border-radius:4px;padding:0.4rem 0.5rem;margin-bottom:0.3rem;">'
+          +'<div style="font-size:0.67rem;color:#405040;margin-bottom:0.15rem;">'+icon+' '+n.autor+' · Piso '+n.piso+'</div>'
+          +'<div style="font-size:0.75rem;color:#708070;font-style:italic;">"'+n.texto+'"</div>'
+          +'</div>';
+      });
+      div.innerHTML=html;
+    }).catch(function(){
+      var div=document.getElementById('muro-notas');
+      if(div)div.innerHTML='<p style="font-size:0.72rem;color:#4a3a2a;">No se pudo conectar con El Muro.</p>';
+    });
+}
+
+function dejarNota(){
+  var texto=document.getElementById('nota-input');
+  if(!texto||!texto.value.trim()){return;}
+  var nota={autor:G.j.n,piso:G.maz.p.floor,texto:texto.value.trim(),clase:G.j.clase||null};
+  sbFetch('notas','POST',nota).then(function(){
+    G.j.notaEscrita=true;
+    document.getElementById('sz-content').innerHTML='<p style="font-size:0.78rem;color:#708070;font-style:italic;">Tu nota queda grabada en el muro.<br><br>"'+nota.texto+'"</p>'
+      +'<div class="sys-box" style="margin-top:0.5rem;"><div class="voz">[Magister Vael]</div><em>Comportamiento no previsto. La muestra deja marcas. Registrando.</em></div>';
+  }).catch(function(){
+    document.getElementById('sz-content').innerHTML='<p style="font-size:0.72rem;color:#c06060;">Error al guardar la nota.</p>';
+  });
+}
+
+function szRegistro(mode){
+  var content=document.getElementById('sz-content');
+  content.innerHTML='<div style="font-size:0.72rem;color:#8a3030;margin-bottom:0.5rem;letter-spacing:0.04em;">EL REGISTRO</div>'
+    +'<div id="lb-rows"><p style="font-size:0.72rem;color:#4a3a2a;">Cargando...</p></div>';
+
+  var limit=mode==='top10'?10:mode==='top25'?25:50;
+  var cols=mode==='full'?'nombre,clase,piso_max,dias_ganados,ciclos':'nombre,clase,piso_max';
+  sbFetch('leaderboard?select='+cols+'&order=piso_max.desc&limit='+limit)
+    .then(function(data){
+      var div=document.getElementById('lb-rows');if(!div)return;
+      if(!data||data.length===0){
+        div.innerHTML='<p style="font-size:0.72rem;color:#4a3a2a;font-style:italic;">El Registro está vacío. Aún.</p>';return;
+      }
+      var html='<div style="display:grid;grid-template-columns:'+(mode==='full'?'auto 1fr auto auto auto':'auto 1fr auto')+';gap:0.2rem 0.5rem;font-size:0.7rem;margin-bottom:0.3rem;color:#5a4a3a;border-bottom:1px solid #2a1a1a;padding-bottom:0.2rem;">'
+        +'<span>#</span><span>Nombre</span><span>Piso</span>'+(mode==='full'?'<span>Días</span><span>Ciclos</span>':'')+'</div>';
+      data.forEach(function(p,i){
+        var icon={'Resistente':'🛡','Espectro':'⚡','Drenador':'🩸','Espejo':'🔮'}[p.clase]||'·';
+        var isMine=p.nombre===G.j.n;
+        var rowStyle=isMine?'background:#1a0808;border-radius:3px;padding:0.1rem 0.2rem;':'padding:0.1rem 0.2rem;';
+        var nameColor=isMine?'#c06060':'#c9b99a';
+        html+='<div style="display:grid;grid-template-columns:'+(mode==='full'?'auto 1fr auto auto auto':'auto 1fr auto')+';gap:0.2rem 0.5rem;font-size:0.72rem;'+rowStyle+'">'
+          +'<span style="color:#5a4a3a;">'+(i+1)+'</span>'
+          +'<span style="color:'+nameColor+';">'+icon+' '+p.nombre+'</span>'
+          +'<span style="color:#e0c870;">'+p.piso_max+'</span>'
+          +(mode==='full'?'<span style="color:#6080c0;">'+(p.dias_ganados||0)+'</span><span style="color:#5a4a3a;">'+(p.ciclos||1)+'</span>':'')
+          +'</div>';
+      });
+      div.innerHTML=html;
+      // Show player's own entry if not in list
+      if(mode==='full'){
+        var inList=data.some(function(p){return p.nombre===G.j.n;});
+        if(!inList){
+          div.innerHTML+='<div style="margin-top:0.4rem;font-size:0.7rem;color:#5a4a3a;border-top:1px solid #2a1a1a;padding-top:0.3rem;">Tu nombre aún no figura en el Registro. Llegarás.</div>';
+        }
+      }
+    }).catch(function(){
+      var div=document.getElementById('lb-rows');
+      if(div)div.innerHTML='<p style="font-size:0.72rem;color:#c06060;">No se pudo conectar con El Registro.</p>';
+    });
+}
+
+function closeLeaderboard(){document.getElementById('ov-leaderboard').classList.remove('on');}
+
+// Update leaderboard on death
+function updateLeaderboard(){
+  var j=G.j;if(!j)return;
+  // Check if player exists
+  sbFetch('leaderboard?nombre=eq.'+encodeURIComponent(j.n)+'&select=id,piso_max,ciclos')
+    .then(function(data){
+      if(data&&data.length>0){
+        var existing=data[0];
+        var newPiso=Math.max(existing.piso_max,G.maz.p.floor);
+        sbFetch('leaderboard?id=eq.'+existing.id,'PATCH',{
+          piso_max:newPiso,
+          dias_ganados:j.days||0,
+          ciclos:(existing.ciclos||1)+1,
+          updated_at:new Date().toISOString()
+        });
+      } else {
+        sbFetch('leaderboard','POST',{
+          nombre:j.n,clase:j.clase||null,
+          piso_max:G.maz.p.floor,
+          dias_ganados:j.days||0,
+          ciclos:1
+        });
+      }
+    }).catch(function(){});
+}
+
+// ── MENU SYSTEM ──────────────────────────────────────────────
+var LANGS=[
+  {code:'es',label:'Español'},
+  {code:'en',label:'English'},
+  {code:'fr',label:'Français'},
+  {code:'de',label:'Deutsch'},
+  {code:'pt',label:'Português'},
+  {code:'it',label:'Italiano'}
+];
+var currentLang=localStorage.getItem('td_lang')||'es';
+
+function openMenu(context){
+  var c=document.getElementById('menu-content');
+  c.innerHTML='';
+  if(context==='game'&&G.j){
+    // Player info
+    var cls=G.j.clase?CLASSES[G.j.clase]:null;
+    var icon=cls?cls.icon:'?';
+    c.innerHTML+='<div class="menu-item" style="cursor:default;opacity:0.8;">'
+      +'<span class="micon">'+icon+'</span>'
+      +'<div><div style="font-family:Cinzel,serif;font-size:0.85rem;color:var(--gold);">'+G.j.n+'</div>'
+      +'<div style="font-size:0.7rem;color:#5a4a3a;">'+(G.j.clase||'Sin clase')+' · Nv.'+G.j.lvl+'</div></div>'
+      +'</div>';
+    // Stats resumen
+    c.innerHTML+='<div class="menu-section">Partida</div>';
+    c.innerHTML+='<div class="menu-item" onclick="closeMenu();toggleBonusPanel();">'
+      +'<span class="micon">📊</span><span>Estadísticas detalladas</span></div>';
+    c.innerHTML+='<div class="menu-item" onclick="closeMenu();openInv();">'
+      +'<span class="micon">🎒</span><span>Inventario</span></div>';
+    // Auto mode toggle
+    var autoLabel=G.combatManual?'Activar modo automático':'Activar modo manual';
+    c.innerHTML+='<div class="menu-item" onclick="closeMenu();G.combatManual=!G.combatManual;">'
+      +'<span class="micon">⚙</span><span>'+autoLabel+'</span></div>';
+    // Clear log
+    c.innerHTML+='<div class="menu-item" onclick="closeMenu();document.getElementById(\'elog\').innerHTML=\'\';">'
+      +'<span class="micon">🗑</span><span>Borrar registro</span></div>';
+    // Leaderboard if unlocked
+    if(G.maz&&G.maz.p.floor>=15){
+      c.innerHTML+='<div class="menu-item" onclick="closeMenu();szRegistro(G.maz.p.floor>=40?\'full\':G.maz.p.floor>=25?\'top25\':\'top10\');document.getElementById(\'ov-leaderboard\').classList.add(\'on\');">'
+        +'<span class="micon">⚔</span><span>El Registro</span></div>';
+    }
+    c.innerHTML+='<div class="menu-section">Peligro</div>';
+    c.innerHTML+='<div class="menu-item danger" onclick="confirmAbandon()">'
+      +'<span class="micon">🚪</span><span>Abandonar partida</span></div>';
+  } else {
+    // Intro menu — no active game
+    c.innerHTML+='<div class="menu-item" style="cursor:default;opacity:0.6;">'
+      +'<span class="micon">⚔</span>'
+      +'<div><div style="font-family:Cinzel,serif;font-size:0.85rem;color:var(--gold);">The Dungeon</div>'
+      +'<div style="font-size:0.7rem;color:#5a4a3a;">Sin partida activa</div></div>'
+      +'</div>';
+  }
+  // Config section — always shown
+  c.innerHTML+='<div class="menu-section">Configuración</div>';
+  // Language selector
+  c.innerHTML+='<div style="padding:0.4rem 1rem 0.2rem;">'
+    +'<div style="font-size:0.72rem;color:#6a5a4a;margin-bottom:0.35rem;">Idioma</div>'
+    +'<div class="lang-grid" id="lang-grid"></div>'
+    +'</div>';
+  // Render language buttons
+  var lg=document.getElementById('lang-grid');
+  LANGS.forEach(function(l){
+    var btn=document.createElement('button');
+    btn.className='lang-btn'+(l.code===currentLang?' active':'');
+    btn.textContent=l.label;
+    btn.onclick=function(){selectLang(l.code);};
+    lg.appendChild(btn);
+  });
+  document.getElementById('ov-menu').classList.add('on');
+}
+
+function selectLang(code){
+  if(code===currentLang)return;
+  // Mark active
+  document.querySelectorAll('.lang-btn').forEach(function(b){b.classList.remove('active');});
+  event.target.classList.add('active');
+  currentLang=code;
+  localStorage.setItem('td_lang',code);
+  // Show restart notice
+  var notice=document.createElement('div');
+  notice.style.cssText='padding:0.5rem 1rem;font-size:0.75rem;color:#c9943a;font-style:italic;border-top:1px solid #2a1a10;';
+  notice.textContent='El idioma se aplicará al reiniciar la partida. (Solo Español disponible ahora.)';
+  // Remove existing notice if any
+  var existing=document.getElementById('lang-notice');
+  if(existing)existing.remove();
+  notice.id='lang-notice';
+  document.getElementById('menu-content').appendChild(notice);
+}
+
+function closeMenu(){document.getElementById('ov-menu').classList.remove('on');}
+
+function confirmAbandon(){
+  var c=document.getElementById('menu-content');
+  c.innerHTML='<div style="padding:1.2rem;text-align:center;">'
+    +'<p style="font-size:0.85rem;color:#c9b99a;margin-bottom:0.5rem;">¿Abandonar la partida?</p>'
+    +'<p style="font-size:0.75rem;color:#6a5a4a;margin-bottom:1rem;">Tu progreso de nivel se perderá. El equipo se conserva.</p>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">'
+    +'<button class="btn" onclick="closeMenu()">Cancelar</button>'
+    +'<button class="btn red" onclick="closeMenu();abandon();">Abandonar</button>'
+    +'</div></div>';
+}
+
+function abandon(){clearInterval(G.intD);clearInterval(G.intC);G.exploring=false;G.paused=true;G.inEvent=false;goScreen('s-intro');}
+</script>
+</body>
+</html>
